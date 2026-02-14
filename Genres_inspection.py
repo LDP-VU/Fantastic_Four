@@ -10,7 +10,7 @@ genre_cols = ["genre_0", "genre_1", "genre_2", "genre_3", "genre_4", "genre_5", 
 
 # Top 10 artists by genre
 def top_10_by_genre(genre_name, data):
-
+    
     # Function to check if any genre column contains the specified genre
     def row_contains_genre(row):
         row_as_str = row.astype(str)
@@ -26,6 +26,7 @@ def top_10_by_genre(genre_name, data):
     return top_genre[["name", "artist_popularity"]]
 
 # Example:
+print("Top 10 artists in Rock genre: ")
 print(top_10_by_genre('Rock', df))
 
 
@@ -70,7 +71,7 @@ plt.ylabel("Artist popularity")
 plt.suptitle("") 
 plt.grid(False)
 plt.tight_layout()
-plt.savefig("GenreCount_vs_Popularity_boxplot.png")
+plt.savefig("Genres_vs_Popularity_boxplot.png")
 plt.close()
 
 # Boxplot showing genres per artist vs number of followers
@@ -82,5 +83,5 @@ plt.ylabel("Number of followers (log scale)")
 plt.suptitle("") 
 plt.grid(False)
 plt.tight_layout()
-plt.savefig("GenreCount_vs_followers_boxplot.png")
+plt.savefig("Genres_vs_followers_boxplot.png")
 plt.close()
