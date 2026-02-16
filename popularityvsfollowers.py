@@ -31,14 +31,13 @@ print("Parameters of the model: ")
 print(model.params)
 print()
 
-
 # Plotting the regression line
 plt.figure()
-plt.scatter(df['followers_log'], df['artist_popularity'], alpha=0.5)
+plt.scatter(df['followers_log'], df['artist_popularity'], alpha=0.2)
 x_values = np.linspace(df['followers_log'].min(), df['followers_log'].max(), 100)
 y_values = model.params['const'] + model.params['followers_log'] * x_values
-plt.plot(x_values, y_values)
-plt.title("Regression: Popularity vs log(Followers)")
+plt.plot(x_values, y_values, color="black", linewidth=1)
+plt.title("Linear Regression of Popularity on log(Followers)")
 plt.xlabel("log(Followers)")
 plt.ylabel("Popularity")
 plt.savefig("log(followers)_popularity_scatter_plot.png")
