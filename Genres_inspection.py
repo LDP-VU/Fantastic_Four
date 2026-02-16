@@ -10,7 +10,7 @@ genre_cols = ["genre_0", "genre_1", "genre_2", "genre_3", "genre_4", "genre_5", 
 
 # Top 10 artists by genre
 def top_10_by_genre(genre_name, data):
-    
+
     # Function to check if any genre column contains the specified genre
     def row_contains_genre(row):
         row_as_str = row.astype(str)
@@ -56,10 +56,10 @@ print("Correlation between genres per artist and followers: ", correlation_genre
 
 # adding column for log of followers since number of followers can vary widely and has skewed distribution from extremely popular artists
     # Adding 1 to avoid log(0) (undefined) for artists with no followers
-df["log_followers"] = np.log(df["followers"] + 1)
+df["followers_log"] = np.log(df["followers"] + 1)
 
 # Calculating correlation between number of genres and log of followers 
-correlation_genre_log_followers = df["genre_count"].corr(df["log_followers"])
+correlation_genre_log_followers = df["genre_count"].corr(df["followers_log"])
 print("Correlation between genres per artist and log(followers):", correlation_genre_log_followers)
 
 # Boxplot showing genres per artist vs popularity
@@ -76,7 +76,7 @@ plt.close()
 
 # Boxplot showing genres per artist vs number of followers
 plt.figure()
-df.boxplot(column="log_followers", by="genre_count")
+df.boxplot(column="followers_log", by="genre_count")
 plt.title("Number of followers vs Number of Genres Associated")
 plt.xlabel("Number of genres associated with artist")
 plt.ylabel("Number of followers (log scale)")
