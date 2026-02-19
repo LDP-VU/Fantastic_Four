@@ -2,14 +2,19 @@
 
 # Overview
 
-## Dataset File
-The dataset "artist_data.csv" provided by Spotify contains information collected in the year 2023. The main variables of the dataset include: Artist names, popualarity score (scaled 0-100), number of followers, Genres associated with artist (6 columns). 
+## Database 
+Data from the SQLite database file "spotify_database.db" is used and analysed. This database contains the following tabular datasets:
+- "artist_data": data provided by Spotify containing information collected in the year 2023. The main variables of the dataset include: Artist names, popualarity score (scaled 0-100), number of followers, Genres associated with artist (6 columns).
+- "albums_data": tracks are listed by track_id and information is given on the album they appear on.
+- "tracks_data": contains information on tracks including id, track_popularity, and whether the track is marked as explicit.
+- "features_data": contains features about each track, indexed by id.
 
 ## Tools used
 Python was used to analyse the data set and the following packages were installed:
 - pandas for data wrangling
 - numpy for numerical computations
 - matplotlib for data visualtions
+- sqlite3 to connect the database
 
 
 # PART 1
