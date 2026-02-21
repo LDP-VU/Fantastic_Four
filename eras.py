@@ -1,6 +1,7 @@
 import sqlite3
 from datetime import datetime
 import pandas as pd
+import matplotlib.pyplot as plt
 
 connection = sqlite3.connect("spotify_database.db")
 cursor = connection.cursor()
@@ -72,18 +73,52 @@ def to_decade(release_date):
 # Update table
 decades = [(to_decade(release_date), rowid) for (rowid, release_date) in rows]
 for row in decades:
-    cursor.execute(
-        "UPDATE albums_data SET decade = ? WHERE rowid = ?",
-        row
-    )
+    cursor.execute("UPDATE albums_data SET decade = ? WHERE rowid = ?",row)
 connection.commit()
 
 # Checking the update worked by printing a sample of release_date and decade
 query = "SELECT release_date, decade FROM albums_data LIMIT 10"
 cursor.execute(query)
-print("Example of decade column next to release date:")
+print("\nExample of decade column next to release date:")
 for row in cursor.fetchall():
     print(row)
+
+# Checking how many albums were released in each decade
+print("\nNumber of albums released in each decade:")
+query = "SELECT decade, COUNT(*) as number_albums FROM albums_data GROUP BY decade ORDER BY decade"
+df_decade_numbers = pd.read_sql(query, connection)
+print(df_decade_numbers)
+
+# Checking the average popularity of albums released in each decade
+query = "SELECT decade, AVG(album_popularity) AS avg_album_popularity FROM albums_data WHERE decade != 'Unknown' GROUP BY decade ORDER BY decade"
+df_pop_decade = pd.read_sql(query, connection)
+print(df_pop_decade)
+
+# Plotting 
+plt.plot(df_pop_decade["decade"], df_pop_decade["avg_album_popularity"])
+plt.xticks(rotation=45)
+plt.title("Average Album Popularity by Decade")
+plt.ylabel("Average Popularity")
+plt.xlabel("Decade")
+plt.savefig("Decade_vs_avgPop.png")
+plt.close()
+
+# Checking the average duration (converted minutes) of albums released per decade 
+query = "SELECT decade, AVG(duration_ms) / 60000.0 AS avg_minutes FROM albums_data WHERE decade != 'Unknown' GROUP BY decade ORDER BY decade "
+df_duration_decade = pd.read_sql(query, connection)
+print(df_duration_decade)
+
+# Plotting
+plt.plot(df_duration_decade["decade"], df_duration_decade["avg_minutes"])
+plt.xticks(rotation=45)
+plt.title("Average Album Duration by Decade")
+plt.ylabel("Average Duration (minutes)")
+plt.xlabel("Decade")
+plt.savefig("Decade_vs_avgDuration.png")
+plt.close()
+
+
+
 
 
 
