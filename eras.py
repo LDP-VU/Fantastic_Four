@@ -48,13 +48,13 @@ for col in new_columns:
 
 # Adding new column "decade" to the albums_data table (if not already existing)
 try:
-    query_add = "ALTER TABLE albums_data ADD COLUMN decade TEXT"
+    query_add = "ALTER TABLE albums_data ADD COLUMN era TEXT"
     cursor.execute(query_add)
     connection.commit()
-    print("Added column: decade")
+    print("Added column: era")
 except sqlite3.OperationalError as e:
     if "duplicate column name" in str(e).lower():
-        print("Column 'decade' already exists")
+        print("Column 'era' already exists")
     else:
         raise
 
@@ -73,50 +73,49 @@ def to_decade(release_date):
 # Update table
 decades = [(to_decade(release_date), rowid) for (rowid, release_date) in rows]
 for row in decades:
-    cursor.execute("UPDATE albums_data SET decade = ? WHERE rowid = ?",row)
+    cursor.execute("UPDATE albums_data SET era = ? WHERE rowid = ?",row)
 connection.commit()
 
-# Checking the update worked by printing a sample of release_date and decade
-query = "SELECT release_date, decade FROM albums_data LIMIT 10"
+# Checking the update worked by printing a sample of release_date and era
+query = "SELECT release_date, era FROM albums_data LIMIT 10"
 cursor.execute(query)
-print("\nExample of decade column next to release date:")
+print("\nExample of era column next to release date:")
 for row in cursor.fetchall():
     print(row)
 
-# Checking how many albums were released in each decade
-print("\nNumber of albums released in each decade:")
-query = "SELECT decade, COUNT(*) as number_albums FROM albums_data GROUP BY decade ORDER BY decade"
-df_decade_numbers = pd.read_sql(query, connection)
-print(df_decade_numbers)
+# Checking how many albums were released in each era
+print("\nNumber of albums released in each era:")
+query = "SELECT era, COUNT(*) as number_albums FROM albums_data GROUP BY era ORDER BY era"
+df_era_numbers = pd.read_sql(query, connection)
+print(df_era_numbers)
 
-# Checking the average popularity of albums released in each decade
-query = "SELECT decade, AVG(album_popularity) AS avg_album_popularity FROM albums_data WHERE decade != 'Unknown' GROUP BY decade ORDER BY decade"
-df_pop_decade = pd.read_sql(query, connection)
-print(df_pop_decade)
+# Checking the average popularity of albums released in each era
+query = "SELECT era, AVG(album_popularity) AS avg_album_popularity FROM albums_data WHERE era != 'Unknown' GROUP BY era ORDER BY era"
+df_pop_era = pd.read_sql(query, connection)
+print(df_pop_era)
 
 # Plotting 
-plt.plot(df_pop_decade["decade"], df_pop_decade["avg_album_popularity"])
+plt.plot(df_pop_era["era"], df_pop_era["avg_album_popularity"])
 plt.xticks(rotation=45)
-plt.title("Average Album Popularity by Decade")
+plt.title("Average Album Popularity by Era")
 plt.ylabel("Average Popularity")
-plt.xlabel("Decade")
-plt.savefig("Decade_vs_avgPop.png")
+plt.xlabel("Era")
+plt.savefig("Era_vs_avgPop.png")
 plt.close()
 
-# Checking the average duration (converted minutes) of albums released per decade 
-query = "SELECT decade, AVG(duration_ms) / 60000.0 AS avg_minutes FROM albums_data WHERE decade != 'Unknown' GROUP BY decade ORDER BY decade "
-df_duration_decade = pd.read_sql(query, connection)
-print(df_duration_decade)
+# Checking the average duration (converted minutes) of albums released per era 
+query = "SELECT era, AVG(duration_ms) / 60000.0 AS avg_minutes FROM albums_data WHERE era != 'Unknown' GROUP BY era ORDER BY era "
+df_duration_era = pd.read_sql(query, connection)
+print(df_duration_era)
 
 # Plotting
-plt.plot(df_duration_decade["decade"], df_duration_decade["avg_minutes"])
+plt.plot(df_duration_era["era"], df_duration_era["avg_minutes"])
 plt.xticks(rotation=45)
-plt.title("Average Album Duration by Decade")
+plt.title("Average Album Duration by Era")
 plt.ylabel("Average Duration (minutes)")
-plt.xlabel("Decade")
-plt.savefig("Decade_vs_avgDuration.png")
+plt.xlabel("Era")
+plt.savefig("Era_vs_avgDuration.png")
 plt.close()
-
 
 
 
