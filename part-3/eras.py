@@ -3,7 +3,7 @@ from datetime import datetime
 import pandas as pd
 import matplotlib.pyplot as plt
 
-connection = sqlite3.connect("spotify_database.db")
+connection = sqlite3.connect("../spotify_database.db")
 cursor = connection.cursor()
 
 # Checking the structure of the albums_data table by printing column names and a sample row
