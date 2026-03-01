@@ -1,6 +1,11 @@
 import pandas as pd
 import sqlite3
 from pathlib import Path
+import sys
+import os
+
+# Adds the parent directory to the search path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 
 # Finds the folder where this script is saved
 script_dir = Path(__file__).resolve().parent

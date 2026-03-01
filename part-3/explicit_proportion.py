@@ -1,5 +1,10 @@
 import sqlite3
 import pandas as pd
+import sys
+import os
+
+# Adds the parent directory to the search path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 
 # connecting to the database and creating a cursor
 connection = sqlite3.connect("spotify_database.db")

@@ -2,6 +2,11 @@ import sqlite3
 from datetime import datetime
 import pandas as pd
 import matplotlib.pyplot as plt
+import sys
+import os
+
+# Adds the parent directory to the search path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 
 connection = sqlite3.connect("../spotify_database.db")
 cursor = connection.cursor()

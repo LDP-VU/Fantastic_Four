@@ -3,6 +3,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sqlite3
 import statsmodels.api as sm
+import sys
+import os
+
+# Adds the parent directory to the search path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 
 # Connect to database
 con = sqlite3.connect("spotify_database.db")

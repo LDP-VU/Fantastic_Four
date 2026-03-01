@@ -1,5 +1,10 @@
 import sqlite3
 import pandas as pd
+import sys
+import os
+
+# Adds the parent directory to the search path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 
 from explicit_proportion import combined_df
 
