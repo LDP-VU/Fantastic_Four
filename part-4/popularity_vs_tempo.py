@@ -24,7 +24,7 @@ cursor = connection.cursor()
 query_tempo = f"SELECT id, tempo FROM features_data"
 cursor.execute(query_tempo)
 
-#stores the query in a dataframe
+# stores the query in a dataframe
 rows = cursor.fetchall()
 df_tempo = pd.DataFrame(rows,
                   columns = [x[0] for x in cursor.description])
@@ -49,7 +49,7 @@ df_song_pop = df_song_pop.sort_values(by=['track_popularity'], ascending=False)
 df_song_pop = df_song_pop[df_song_pop['tempo'] > 0]
 
 
-#Prepare datas (dropping NaNs ensures the trend line calculation works)
+# Prepare datas (dropping NaNs ensures the trend line calculation works)
 df_plot = df_song_pop.dropna(subset=['tempo', 'track_popularity'])
 x = df_plot['tempo']
 y = df_plot['track_popularity']
@@ -58,12 +58,12 @@ y = df_plot['track_popularity']
 plt.scatter(x, y, s=1, alpha=0.2, color='tab:blue')
 
 
-# 4. Adds Labels and Formatting
+# Adds Labels and Formatting
 plt.title('Correlation: Tempo vs. Track Popularity')
 plt.xlabel('Tempo ($BPM$)')
 plt.ylabel('Popularity ($0-100$)')
 
-# 5. Save the result
+# Save the result
 plt.tight_layout()
 plt.savefig('tempo_popularity.png')
 
