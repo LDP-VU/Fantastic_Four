@@ -5,16 +5,15 @@ import sys
 import os
 
 # Adds the parent directory to the search path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
-
-conn = sqlite3.connect("spotify_database.db")
+db_path = os.path.join(os.path.dirname(__file__), "..", "spotify_database.db")
+connection = sqlite3.connect(db_path)
 
 #Find most popular albums, print 15 most popular ones
 print(pd.read_sql("""
 SELECT DISTINCT album_name, album_popularity FROM albums_data
 ORDER BY album_popularity DESC
 LIMIT 15;
-""", conn))
+""", connection))
 
 
 # We choose the most popular album Nadie Sabe Lo Que Va A Pasar Mañana
@@ -25,7 +24,7 @@ album_id_df = pd.read_sql(f"""
 SELECT DISTINCT album_id
 FROM albums_data
 WHERE album_name = '{album_name}'
-""", conn)
+""", connection)
 album_id = album_id_df.iloc[0,0]
 
 # Now we will find the features of the tracks in the album and
@@ -40,7 +39,7 @@ SELECT albums_data.track_name,
 FROM albums_data
 JOIN features_data ON albums_data.track_id = features_data.id
 WHERE albums_data.album_id = '{album_id}'
-""", conn)
+""", connection)
 
 print(df_album.describe())
 
@@ -49,6 +48,13 @@ df_album.set_index("track_name")[["danceability", "loudness"]].plot(kind="bar", 
 plt.title(f"Feature Variation Across Tracks in '{album_name}'")
 plt.ylabel("Feature Value")
 plt.show()
+
+
+
+
+
+
+
 
 
 
