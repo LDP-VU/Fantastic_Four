@@ -47,7 +47,9 @@ print(df_album.describe())
 df_album.set_index("track_name")[["danceability", "loudness"]].plot(kind="bar", figsize=(12,6))
 plt.title(f"Feature Variation Across Tracks in '{album_name}'")
 plt.ylabel("Feature Value")
-plt.show()
+plt.savefig(f"feature_variation_{album_name.replace(' ', '_')}.png")
+plt.close()
+
 
 
 
