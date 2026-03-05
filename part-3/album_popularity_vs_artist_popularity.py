@@ -7,11 +7,8 @@ import sys
 import os
 
 # Adds the parent directory to the search path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
-
-
-# 1) Load data from database
-con = sqlite3.connect("spotify_database.db")
+db_path = os.path.join(os.path.dirname(__file__), "..", "spotify_database.db")
+con = sqlite3.connect(db_path)
 
 query = """
 SELECT 
