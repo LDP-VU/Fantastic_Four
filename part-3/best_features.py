@@ -4,9 +4,8 @@ import sys
 import os
 
 # Adds the parent directory to the search path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
-
-conn = sqlite3.connect("spotify_database.db")
+db_path = os.path.join(os.path.dirname(__file__), "..", "spotify_database.db")
+conn = sqlite3.connect(db_path)
 
 # We'll look at feature danceability
 feature = "danceability"
@@ -53,6 +52,7 @@ artist_stats = expanded.groupby("artist").agg(
 ).sort_values(by="avg_feature", ascending=False)
 
 print(artist_stats.head(20))
+
 
 
                 
