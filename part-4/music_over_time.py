@@ -6,9 +6,8 @@ import sys
 import os
 
 # Adds the parent directory to the search path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
-
-connection = sqlite3.connect("spotify_database.db")
+db_path = os.path.join(os.path.dirname(__file__), "..", "spotify_database.db")
+connection = sqlite3.connect(db_path)
 
 # Features to analyse over time
 features = [
