@@ -5,7 +5,7 @@ import sys
 import os
 
 # Adds the parent directory to the search path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
+db_path = os.path.join(os.path.dirname(__file__), "..", "spotify_database.db")
 
 features = [
     "danceability",
@@ -19,7 +19,7 @@ features = [
 # Function to summarize features for a given album
 def album_feature_summary(album_name):
 
-    connection = sqlite3.connect("spotify_database.db")
+    connection = sqlite3.connect(db_path)
 
     # seeing if there is an exact match for album name
     exact_query = """
