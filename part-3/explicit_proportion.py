@@ -4,10 +4,10 @@ import sys
 import os
 
 # Adds the parent directory to the search path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
+db_path = os.path.join(os.path.dirname(__file__), "..", "spotify_database.db")
 
 # connecting to the database and creating a cursor
-connection = sqlite3.connect("spotify_database.db")
+connection = sqlite3.connect(db_path)
 cursor = connection.cursor()
 
 # finds all explicit tracks
