@@ -7,10 +7,10 @@ import sys
 import os
 
 # Adds the parent directory to the search path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
+db_path = os.path.join(os.path.dirname(__file__), "..", "spotify_database.db")
 
-# Connect to database
-con = sqlite3.connect("spotify_database.db")
+# connecting to the database and creating a cursor
+con = sqlite3.connect(db_path)
 
 # Load track popularity and explicit flag
 query = """
