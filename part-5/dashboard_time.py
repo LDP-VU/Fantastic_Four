@@ -3,11 +3,10 @@ import sqlite3
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import sys
 import os
 
 # Adds the parent directory to the search path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
+db_path = os.path.join(os.path.dirname(__file__), "..", "spotify_database.db")
 
 # Setting dashboard layout
 st.set_page_config(
@@ -62,7 +61,6 @@ st.title("Trends over time (Yearly averages)")
 st.write("Use the slider below to select a year range that the data should be displayed for and a feature to visualize.")
 
 # Load data onto page
-db_path = "spotify_database.db"
 df = load_joined_data(db_path)
 
 # Year range for slider based on data
