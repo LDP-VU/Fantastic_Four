@@ -10,3 +10,9 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 
 
+# Setting dashboard layout
+st.set_page_config(
+    page_title="Feature & Genre analysis", 
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
