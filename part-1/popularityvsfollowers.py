@@ -2,14 +2,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
-import sys
-import os
 
-# Adds the parent directory to the search path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
-
-df = pd.read_csv("artist_data.csv")
-
+#Loading data
+df = pd.read_csv('../artist_data.csv')
 
 # Looking at just correlation between followers and popularity
 corr = df['followers'].corr(df['artist_popularity'])
@@ -59,3 +54,4 @@ print("Top 10 overperformers (high popularity, low followers):")
 print(overperformers[["name", "followers", "artist_popularity", "residual"]])
 print("\nTop 10 legacy artists (low popularity, high followers):")
 print(legacy_artists[["name", "followers", "artist_popularity", "residual"]])
+
