@@ -2,7 +2,7 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 import os
 
 # Adds the parent directory to the search path
@@ -17,7 +17,7 @@ st.set_page_config(
 
 # Loading data using the format from "music_over_time.py"
 @st.cache_data
-def load_joined_data(db_path: str) -> pd.DataFrame:
+def load_joined_data(db_path):
     connection = sqlite3.connect(db_path)
     df = pd.read_sql("""
         SELECT
@@ -58,7 +58,6 @@ FEATURES = [
 
 # Page output
 st.title("Trends over time (Yearly averages)")
-st.write("Use the slider below to select a year range that the data should be displayed for and a feature to visualize.")
 
 # Load data onto page
 df = load_joined_data(db_path)
@@ -96,6 +95,12 @@ yearly_means = (df_time.groupby("year")[FEATURES].mean().reset_index().sort_valu
 
 # Output of selected filters
 st.subheader(f"{feature.capitalize()} (Yearly Mean)")
+st.info(
+    "This chart shows the yearly average of the selected audio feature across all tracks in the Spotify dataset.\n"
+    "Each point represents the mean value for that year.\n "
+    "The lighter line shows a 10-year rolling average to highlight longer-term trends.\n"
+    "Use the slider above to focus on a specific period, and the dropdown to select features."
+)
 
 # Plot
 if yearly_means.empty or len(yearly_means) < 2:
@@ -107,25 +112,41 @@ else:
     # Rolling smoothing over 10 years to show clearer trends over time 
     y_smooth = (pd.Series(y).rolling(window=10, center=True, min_periods=1).mean().to_numpy())
 
-    fig, ax = plt.subplots()
-    fig.set_size_inches(10, 4)
+    fig = go.Figure()
 
-    ax.plot(x, y, label="Yearly mean")
-    ax.plot(x, y_smooth, label=f"Smoothed mean by rolling 10 years")
+    # adding trace lines
+    fig.add_trace(go.Scatter(
+        x=x,
+        y=y,
+        mode="lines+markers",
+        name="Yearly mean",
+    ))
+    fig.add_trace(go.Scatter(
+        x=x,
+        y=y_smooth,
+        mode="lines",
+        name="Smoothed mean",
+    ))
 
     # Adjusting x axis labels to make cleaner
     start_tick = int(np.ceil(x.min() / 10) * 10)
     end_tick = int(np.floor(x.max() / 10) * 10)
     ticks = np.arange(start_tick, end_tick + 1, 10)
-    ax.set_xticks(ticks)
-    ax.set_xticklabels([str(int(t)) for t in ticks], rotation=0)
-    # Setting labels and title
-    ax.set_title(f"Yearly average of {feature.capitalize()} over time")
-    ax.set_xlabel("Year")
-    ax.set_ylabel(f"Average {feature}")
-    ax.legend()
 
-    st.pyplot(fig)
+    # overall figure layout
+    fig.update_layout(
+        title=f"Yearly average of {feature.capitalize()} over time",
+        xaxis_title="Year",
+        yaxis_title=f"Average {feature}",
+        xaxis=dict(
+            tickmode="array",
+            tickvals=ticks,
+            ticktext=[str(int(t)) for t in ticks]),
+        hovermode="x unified",
+        height=600)
+
+    st.plotly_chart(fig, use_container_width=True)
+
 
 # Table of actual yearly means for selected year range
 with st.expander("Show yearly averages table"):
