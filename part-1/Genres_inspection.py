@@ -1,14 +1,9 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import sys
-import os
-
-# Adds the parent directory to the search path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
 
 # loading dataset
-df = pd.read_csv('artist_data.csv')
+df = pd.read_csv('../artist_data.csv')
 # Genre columns
 genre_cols = ["genre_0", "genre_1", "genre_2", "genre_3", "genre_4", "genre_5", "genre_6"]
 
@@ -90,3 +85,4 @@ plt.grid(False)
 plt.tight_layout()
 plt.savefig("Genres_vs_followers_boxplot.png")
 plt.close()
+
