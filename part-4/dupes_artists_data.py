@@ -1,19 +1,10 @@
 import pandas as pd
 import sqlite3
 from pathlib import Path
-import sys
 import os
 
 # Adds the parent directory to the search path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..')))
-
-# Finds the folder where this script is saved
-script_dir = Path(__file__).resolve().parent
-
-#finds the parent folder
-parent_dir = script_dir.parent
-# Joins that folder path with the database name
-db_path = parent_dir / "spotify_database.db"
+db_path = os.path.join(os.path.dirname(__file__), "..", "spotify_database.db")
 
 # Connects to the database at that specific location
 connection = sqlite3.connect(db_path)
