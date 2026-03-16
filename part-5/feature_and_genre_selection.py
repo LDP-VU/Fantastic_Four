@@ -73,9 +73,6 @@ with st.sidebar:
             ["pop", "rock", "hip hop", "jazz", "electronic", "r&b", "country", "classical"]
         )
         
-        # Number of artists to show
-        n_artists = st.slider("Number of top artists:", 5, 20, 10)
-        
     else:  # Feature Analysis
         st.subheader("Feature Selection")
         selected_feature = st.selectbox(
@@ -116,25 +113,23 @@ if analysis_type == "Genre Analysis":
         st.markdown("---")
         
         # Display top artists
-        st.subheader(f"Top {n_artists} Artists in {selected_genre.capitalize()}")
+        st.subheader(f"Top 10 Artists in {selected_genre.capitalize()}")
         
-        # Show only requested number
-        display_result = result.head(n_artists)
         
         # Create a bar chart
         fig = go.Figure()
         fig.add_trace(go.Bar(
-            x=display_result['artist_popularity'],
-            y=display_result['name'],
+            x=result['artist_popularity'],
+            y=result['name'],
             orientation='h',
             marker=dict(color='lightcoral')
         ))
         
         fig.update_layout(
-            title=f"Top {n_artists} {selected_genre.capitalize()} Artists by Popularity",
+            title=f"Top 10 {selected_genre.capitalize()} Artists by Popularity",
             xaxis_title="Popularity",
             yaxis_title="Artist",
-            height=400 + (n_artists * 20),
+            height=400 + (10 * 20),
             margin=dict(l=0, r=0, t=40, b=0)
         )
         
@@ -142,7 +137,7 @@ if analysis_type == "Genre Analysis":
         
         # Show table
         with st.expander("View as table"):
-            st.dataframe(display_result, use_container_width=True)
+            st.dataframe(result.head(10), use_container_width=True)
     else:
         st.warning(f"No artists found for genre: {selected_genre}")
 
