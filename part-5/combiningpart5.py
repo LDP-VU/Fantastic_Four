@@ -7,9 +7,13 @@ import plotly.express as px
 import matplotlib.pyplot as plt
 import os
 import sys
+import ast
+
+db_path = os.path.join(os.path.dirname(__file__), '..', 'spotify_database.db')
+
 
 # Database path
-db_path = os.path.join(os.path.dirname(__file__), "spotify_database.db")
+df = pd.read_csv(os.path.join(os.path.dirname(__file__), '..', 'artist_data.csv'))
 
 # Setting dashboard layout
 st.set_page_config(
@@ -52,7 +56,7 @@ with st.sidebar:
 @st.cache_data
 def load_artist_data():
     """Load artist data for genre analysis"""
-    df = pd.read_csv(os.path.join(os.path.dirname(__file__), 'artist_data.csv'))
+    df = pd.read_csv(os.path.join(os.path.dirname(__file__), '..', 'artist_data.csv'))
     return df
 
 @st.cache_data
@@ -550,7 +554,7 @@ def artist_search_page():
 
         genre_data = artist_info['artist_genres']
         if isinstance(genre_data, str):
-            genre_list = eval(genre_data)
+            genre_list = ast.literal_eval(genre_data)
         else:
             genre_list = []
 
