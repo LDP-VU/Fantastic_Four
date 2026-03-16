@@ -8,15 +8,17 @@ import os
 import sys
 
 # Add path to import from part-1 and part-3
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'part-1')))
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'part-3')))
+sys.path.append(os.path.join(os.path.dirname(__file__), "scripts"))
+
 
 # Import modules
-import Genres_inspection
-import album_features
+import part1
+import part3
+
+db_path = os.path.join(os.path.dirname(__file__), "spotify_database.db")
 
 # Database path
-db_path = os.path.join(os.path.dirname(__file__), "..", "spotify_database.db")
+df = pd.read_csv(os.path.join(os.path.dirname(__file__), 'artist_data.csv'))
 
 # Setting dashboard layout
 st.set_page_config(
@@ -29,7 +31,7 @@ st.set_page_config(
 @st.cache_data
 def load_artist_data():
     """Load artist data for genre analysis"""
-    df = pd.read_csv(os.path.join(os.path.dirname(__file__), '..', 'artist_data.csv'))
+    df = pd.read_csv(os.path.join(os.path.dirname(__file__), 'artist_data.csv'))
     return df
 
 @st.cache_data
@@ -93,14 +95,15 @@ if analysis_type == "Genre Analysis":
     df_artists = load_artist_data()
     
     # Get top artists for selected genre using the function from Genres_inspection
-    result = Genres_inspection.top_10_by_genre(selected_genre, df_artists)
+    genre_cols = ["genre_0","genre_1","genre_2","genre_3","genre_4","genre_5","genre_6"]
+    result = part1.top_10_by_genre(selected_genre, df_artists, genre_cols)
     
     if not result.empty:
         # Display metrics
         col1, col2, col3 = st.columns(3)
         with col1:
             # Count artists in this genre
-            mask = df_artists[Genres_inspection.genre_cols].apply(
+            mask = df_artists[genre_cols].apply(
                 lambda row: row.astype(str).str.contains(selected_genre, case=False).any(), 
                 axis=1
             )
