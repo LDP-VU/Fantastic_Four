@@ -120,7 +120,7 @@ All code and analyses are educational and exploratory in nature.
 
 
 ## Contact
-Leonidas du Preez
+Leo Du Preez
 Email: l.dupreez@student.vu.nl
 
 Paula Lotz
