@@ -687,6 +687,35 @@ def trends_over_time_page():
     st.caption(f"Years shown: {start_year}–{end_year}")
 
 # ============================================================================
+# SPOTIFY THEME STYLING
+# ============================================================================
+
+SPOTIFY_GREEN = "#1DB954"
+DARK_BG = "#000000"
+CARD_BG = "#121212"
+TEXT_COLOR = "#FFFFFF"
+
+# Set full app background to black
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background-color: #000000;
+        color: white;
+    }
+
+    /* Optional: nicer container look */
+    .block-container {
+        background-color: #121212;
+        padding: 2rem;
+        border-radius: 10px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# ============================================================================
 # MAIN APP - Page routing
 # ============================================================================
 
