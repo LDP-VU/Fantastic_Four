@@ -28,20 +28,32 @@ if 'page' not in st.session_state:
 
 # Sidebar navigation
 with st.sidebar:
+
+    # Spotify logo (top of sidebar)
+    st.markdown(
+        """
+        <div style="text-align: center; margin-bottom: 10px;">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/8/84/Spotify_icon.svg" width="50">
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # Navigation title
     st.markdown("## Navigation")
-    
+
     if st.button("Home", use_container_width=True):
         st.session_state.page = "Home"
-    
+
     if st.button("Feature & Genre Analysis", use_container_width=True):
         st.session_state.page = "Feature & Genre Analysis"
-    
+
     if st.button("Artist Search", use_container_width=True):
         st.session_state.page = "Artist Search"
-    
+
     if st.button("Trends Over Time", use_container_width=True):
         st.session_state.page = "Trends Over Time"
-    
+
     st.markdown("---")
     
 
@@ -699,22 +711,82 @@ TEXT_COLOR = "#FFFFFF"
 st.markdown(
     """
     <style>
+    /* --- MAIN APP BACKGROUND --- */
     .stApp {
-        background-color: #000000;
-        color: white;
+        background-color: #121212;
+        color: #FFFFFF;
     }
 
-    /* Optional: nicer container look */
+    /* --- REMOVE WHITE TOP BAR --- */
+    header {
+        background-color: #121212 !important;
+    }
+
+    /* --- MAIN CONTENT AREA --- */
+    .main {
+        background-color: #121212;
+    }
+
+    /* --- MAIN CONTAINER --- */
     .block-container {
         background-color: #121212;
         padding: 2rem;
-        border-radius: 10px;
     }
+
+    /* --- SIDEBAR --- */
+    section[data-testid="stSidebar"] {
+        background-color: #0e0e0e;
+        border-right: 2px solid #1DB954;
+    }
+
+    /* --- REMOVE ANY REMAINING WHITE --- */
+    div[data-testid="stAppViewContainer"] {
+        background-color: #121212;
+    }
+
+    /* --- TEXT --- */
+    h1, h2, h3, h4, h5, h6 {
+        color: #FFFFFF;
+    }
+
+    p, span, div {
+        color: #FFFFFF;
+    }
+
+    /* --- BUTTON STYLE --- */
+div.stButton > button {
+    background-color: #FFFFFF;
+    color: #000000 !important;   /* 👈 force black text */
+    border-radius: 10px;
+    border: none;
+    padding: 0.6em 1em;
+    transition: all 0.2s ease-in-out;
+}
+
+/* --- BUTTON TEXT (fix inner span) --- */
+div.stButton > button * {
+    color: #000000 !important;   /* 👈 ensures text inside is black */
+}
+
+/* --- BUTTON HOVER --- */
+div.stButton > button:hover {
+    background-color: #1DB954;
+    color: #000000 !important;
+}
+
+/* --- BUTTON HOVER TEXT --- */
+div.stButton > button:hover * {
+    color: #FFFFFF !important;
+}
+
+/* --- BUTTON CLICK --- */
+div.stButton > button:active {
+    transform: scale(0.98);
+}
     </style>
     """,
     unsafe_allow_html=True
 )
-
 # ============================================================================
 # MAIN APP - Page routing
 # ============================================================================
