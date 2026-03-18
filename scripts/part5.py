@@ -43,11 +43,7 @@ with st.sidebar:
         st.session_state.page = "Trends Over Time"
     
     st.markdown("---")
-    st.markdown("### About")
-    st.info(
-        "This dashboard explores a Spotify dataset (1900-2023) "
-        "containing information on artists, albums, tracks, and audio features."
-    )
+    
 
 # ============================================================================
 # DATA LOADING FUNCTIONS (Shared across pages)
@@ -535,8 +531,8 @@ def artist_search_page():
     """Artist Search page content"""
     df_cleaned = get_all_artist(db_path)
 
-    st.sidebar.header("Artist search")
-    selected_artist = st.sidebar.selectbox(
+    st.header("Artist search")
+    selected_artist = st.selectbox(
         "Type to search for an artist:",
         options = df_cleaned['name'],
         index = None,
