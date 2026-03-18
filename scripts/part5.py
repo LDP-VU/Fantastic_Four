@@ -131,29 +131,55 @@ def load_feature_data(db_path, feature):
     connection.close()
     return df
 
+
 def get_top_tracks_for_artist(selected_artist_name, db_path):
     connection = sqlite3.connect(db_path)
 
-    # 1. Fetch popularity data from tracks_data
+    # 1. Fetch popularity data
     query_pop = "SELECT id, track_popularity FROM tracks_data"
     df_pop = pd.read_sql(query_pop, connection)
 
-    # 2. Fetch track names and artist info from albums_data
-    # We include artist_0 to match the main artist name
-    query_albums = "SELECT track_id, track_name, artist_0 FROM albums_data"
-    df_albums = pd.read_sql(query_albums, connection)
-
+    # 2. Fetch track info and audio features from albums_data & features_data
+    # We add duration and features to perform the "Outlier/Invalid" check
+    query_details = """
+        SELECT 
+            albums_data.track_id, 
+            albums_data.track_name, 
+            albums_data.artist_0, 
+            albums_data.duration_ms,
+            features_data.danceability,
+            features_data.energy,
+            features_data.valence
+        FROM albums_data
+        JOIN features_data ON albums_data.track_id = features_data.id
+    """
+    df_details = pd.read_sql(query_details, connection)
     connection.close()
 
-    # 3. Merge dataframes on the track ID
-    # tracks_data uses 'id', albums_data uses 'track_id'
-    df_merged = pd.merge(df_albums, df_pop, left_on='track_id', right_on='id', how='inner')
+    # 3. Merge dataframes
+    df_merged = pd.merge(df_details, df_pop, left_on='track_id', right_on='id', how='inner')
 
-    # 4. Filter for the selected artist and sort
-    # We strip and lowercase to ensure a match regardless of formatting
+    # --- WRANGLING STEP: Outliers and Invalid Records ---
+
+    # Remove missing IDs and non-positive durations
+    df_merged = df_merged.dropna(subset=["track_id"])
+    df_merged = df_merged[df_merged["duration_ms"] > 0]
+
+    df_merged = df_merged.sort_values(by='track_popularity', ascending=False)
+    df_merged = df_merged.drop_duplicates(subset=["track_name"], keep='first')
+
+    # Ensure audio features are in the valid range [0, 1]
+    features = ["danceability", "energy", "valence"]
+    for col in features:
+        df_merged = df_merged[(df_merged[col] >= 0) & (df_merged[col] <= 1)]
+
+    # Remove duplicate tracks to ensure the Top 5 are unique
+    df_merged = df_merged.drop_duplicates(subset=["track_id"])
+
+    # --- FILTERING FOR ARTIST ---
+
     df_merged['artist_0_clean'] = df_merged['artist_0'].str.lower().str.strip()
     target_name = selected_artist_name.lower().strip()
-
     artist_tracks = df_merged[df_merged['artist_0_clean'] == target_name].copy()
 
     # Sort by popularity and take the top 5
