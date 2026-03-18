@@ -11,8 +11,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Load dataset
 def load_data():
-    file_path = os.path.join(os.path.dirname(__file__), "artist_data.csv")
-    df = pd.read_csv(file_path)
+    df = pd.read_csv(os.path.join(os.path.dirname(__file__), '..', 'artist_data.csv'))
     return df
 
 
