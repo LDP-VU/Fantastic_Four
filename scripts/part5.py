@@ -159,6 +159,51 @@ def load_explicit_data(db_path):
 
     return df
 
+@st.cache_data
+def load_genre_feature_data(db_path, feature):
+    connection = sqlite3.connect(db_path)
+
+    df = pd.read_sql(f"""
+        SELECT 
+            features_data.{feature} AS feature_value,
+            artist_data.genre_1,
+            artist_data.genre_2,
+            artist_data.genre_3,
+            artist_data.genre_4
+        FROM features_data
+        JOIN albums_data ON features_data.id = albums_data.track_id
+        JOIN artist_data ON albums_data.artist_id = artist_data.id
+        WHERE features_data.{feature} IS NOT NULL
+    """, connection)
+
+    connection.close()
+    return df
+
+
+@st.cache_data
+def get_artist_explicit_ratio(artist_name, db_path):
+    connection = sqlite3.connect(db_path)
+
+    df = pd.read_sql("""
+        SELECT t.explicit, a.artist_0
+        FROM tracks_data t
+        JOIN albums_data a ON t.id = a.track_id
+    """, connection)
+
+    connection.close()
+
+    df["artist_clean"] = df["artist_0"].str.lower().str.strip()
+    artist_name = artist_name.lower().strip()
+
+    df_artist = df[df["artist_clean"] == artist_name].copy()
+
+    if df_artist.empty:
+        return None
+
+    df_artist["explicit_num"] = df_artist["explicit"].astype(str).str.lower().map({"true": 1, "false": 0})
+
+    return df_artist["explicit_num"].mean()
+
 
 def get_top_tracks_for_artist(selected_artist_name, db_path):
     connection = sqlite3.connect(db_path)
@@ -602,8 +647,49 @@ def feature_genre_analysis_page():
                     barmode='overlay'
                 )
                 st.plotly_chart(fig_dist, use_container_width=True)
-        else:
-            st.warning(f"No data found for feature: {selected_feature}")
+
+            #Genres hig hand low on specific feature
+            st.markdown("---")
+            st.subheader("Genres in Very Low vs Very High Feature Values")
+
+            df_genre_feat = load_genre_feature_data(db_path, selected_feature)
+            if not df_genre_feat.empty:
+                df_genre_feat = df_genre_feat.dropna(subset=["feature_value"])
+
+                # Create quantiles
+                df_genre_feat["level"] = pd.qcut(
+                    df_genre_feat["feature_value"],
+                    q=5,
+                    labels=["very low", "low", "medium", "high", "very high"]
+                )
+
+                def count_genres(df_subset):
+                    genres = []
+                    for col in ["genre_1", "genre_2", "genre_3", "genre_4"]:
+                        genres.extend(df_subset[col].dropna().astype(str))
+                    return pd.Series(genres).value_counts().head(10)
+
+                low_counts = count_genres(df_genre_feat[df_genre_feat["level"] == "very low"])
+                high_counts = count_genres(df_genre_feat[df_genre_feat["level"] == "very high"])
+                col1, col2 = st.columns(2)
+                with col1:
+                    fig_low = px.bar(
+                        x=low_counts.values,
+                        y=low_counts.index,
+                        orientation='h',
+                        title=f"Top Genres (Very Low {selected_feature})"
+                    )
+                    st.plotly_chart(fig_low, use_container_width=True)
+                with col2:
+                    fig_high = px.bar(
+                        x=high_counts.values,
+                        y=high_counts.index,
+                        orientation='h',
+                        title=f"Top Genres (Very High {selected_feature})"
+                    )
+                    st.plotly_chart(fig_high, use_container_width=True)
+            else:
+                st.warning(f"No data found for feature: {selected_feature}")
 
 def artist_search_page():
     """Artist Search page content"""
@@ -622,9 +708,15 @@ def artist_search_page():
 
         st.title(f"{artist_info['name']}")
 
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         col1.metric("Popularity", f"{artist_info['artist_popularity']}")
         col2.metric("Followers", f"{artist_info['followers']}")
+        #Explicit ratio as column 4
+        explicit_ratio = get_artist_explicit_ratio(selected_artist, db_path)
+        if explicit_ratio is not None:
+            col4.metric("Explicit %", f"{explicit_ratio*100:.1f}%")
+        else:
+            col4.metric("Explicit %", "N/A")
 
         genre_data = artist_info['artist_genres']
         if isinstance(genre_data, str):
