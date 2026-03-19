@@ -28,20 +28,32 @@ if 'page' not in st.session_state:
 
 # Sidebar navigation
 with st.sidebar:
+
+    # Spotify logo (top of sidebar)
+    st.markdown(
+        """
+        <div style="text-align: center; margin-bottom: 10px;">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/8/84/Spotify_icon.svg" width="50">
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # Navigation title
     st.markdown("## Navigation")
-    
+
     if st.button("Home", use_container_width=True):
         st.session_state.page = "Home"
-    
+
     if st.button("Feature & Genre Analysis", use_container_width=True):
         st.session_state.page = "Feature & Genre Analysis"
-    
+
     if st.button("Artist Search", use_container_width=True):
         st.session_state.page = "Artist Search"
-    
+
     if st.button("Trends Over Time", use_container_width=True):
         st.session_state.page = "Trends Over Time"
-    
+
     st.markdown("---")
     
 
@@ -114,22 +126,6 @@ def load_joined_data(db_path):
     return df
 
 @st.cache_data
-def load_explicit_data(db_path):
-    connection = sqlite3.connect(db_path)
-    df = pd.read_sql("""
-        SELECT track_popularity, explicit
-        FROM tracks_data
-        WHERE track_popularity IS NOT NULL
-        AND explicit IS NOT NULL
-    """, connection)
-    connection.close()
-
-    df["explicit_num"] = df["explicit"].astype(str).str.lower().map({"true": 1, "false": 0})
-    df = df.dropna(subset=["explicit_num"])
-
-    return df
-
-@st.cache_data
 def load_feature_data(db_path, feature):
     """Load feature data from database"""
     connection = sqlite3.connect(db_path)
@@ -147,29 +143,55 @@ def load_feature_data(db_path, feature):
     connection.close()
     return df
 
+
 def get_top_tracks_for_artist(selected_artist_name, db_path):
     connection = sqlite3.connect(db_path)
 
-    # 1. Fetch popularity data from tracks_data
+    # 1. Fetch popularity data
     query_pop = "SELECT id, track_popularity FROM tracks_data"
     df_pop = pd.read_sql(query_pop, connection)
 
-    # 2. Fetch track names and artist info from albums_data
-    # We include artist_0 to match the main artist name
-    query_albums = "SELECT track_id, track_name, artist_0 FROM albums_data"
-    df_albums = pd.read_sql(query_albums, connection)
-
+    # 2. Fetch track info and audio features from albums_data & features_data
+    # We add duration and features to perform the "Outlier/Invalid" check
+    query_details = """
+        SELECT 
+            albums_data.track_id, 
+            albums_data.track_name, 
+            albums_data.artist_0, 
+            albums_data.duration_ms,
+            features_data.danceability,
+            features_data.energy,
+            features_data.valence
+        FROM albums_data
+        JOIN features_data ON albums_data.track_id = features_data.id
+    """
+    df_details = pd.read_sql(query_details, connection)
     connection.close()
 
-    # 3. Merge dataframes on the track ID
-    # tracks_data uses 'id', albums_data uses 'track_id'
-    df_merged = pd.merge(df_albums, df_pop, left_on='track_id', right_on='id', how='inner')
+    # 3. Merge dataframes
+    df_merged = pd.merge(df_details, df_pop, left_on='track_id', right_on='id', how='inner')
 
-    # 4. Filter for the selected artist and sort
-    # We strip and lowercase to ensure a match regardless of formatting
+    # --- WRANGLING STEP: Outliers and Invalid Records ---
+
+    # Remove missing IDs and non-positive durations
+    df_merged = df_merged.dropna(subset=["track_id"])
+    df_merged = df_merged[df_merged["duration_ms"] > 0]
+
+    df_merged = df_merged.sort_values(by='track_popularity', ascending=False)
+    df_merged = df_merged.drop_duplicates(subset=["track_name"], keep='first')
+
+    # Ensure audio features are in the valid range [0, 1]
+    features = ["danceability", "energy", "valence"]
+    for col in features:
+        df_merged = df_merged[(df_merged[col] >= 0) & (df_merged[col] <= 1)]
+
+    # Remove duplicate tracks to ensure the Top 5 are unique
+    df_merged = df_merged.drop_duplicates(subset=["track_id"])
+
+    # --- FILTERING FOR ARTIST ---
+
     df_merged['artist_0_clean'] = df_merged['artist_0'].str.lower().str.strip()
     target_name = selected_artist_name.lower().strip()
-
     artist_tracks = df_merged[df_merged['artist_0_clean'] == target_name].copy()
 
     # Sort by popularity and take the top 5
@@ -314,32 +336,6 @@ def home_page():
         plt.suptitle("")
         fig5.tight_layout()
         st.pyplot(fig5, use_container_width=True)
-
-    st.markdown("---")
-    st.subheader("Non-Explicit vs Explicit tracks")
-
-    df_explicit = load_explicit_data(db_path)
-
-    if not df_explicit.empty:
-        explicit_mean = df_explicit[df_explicit["explicit_num"] == 1]["track_popularity"].mean()
-        non_explicit_mean = df_explicit[df_explicit["explicit_num"] == 0]["track_popularity"].mean()
-
-        col1, col2 = st.columns(2)
-        col1.metric("Non-Explicit Avg Popularity", f"{non_explicit_mean:.2f}")
-        col2.metric("Explicit Avg Popularity", f"{explicit_mean:.2f}")
-
-        fig_explicit = go.Figure()
-        fig_explicit.add_trace(go.Bar(
-            x=["Non-Explicit", "Explicit"],
-            y=[non_explicit_mean, explicit_mean]
-        ))
-
-        fig_explicit.update_layout(
-            title="Average Popularity: Explicit vs Non-Explicit",
-            yaxis_title="Popularity"
-        )
-
-        st.plotly_chart(fig_explicit, use_container_width=True)
 
 def feature_genre_analysis_page():
     """Feature & Genre Analysis page content"""
@@ -728,6 +724,95 @@ def trends_over_time_page():
         st.dataframe(yearly_means, use_container_width=True)
     st.caption(f"Years shown: {start_year}–{end_year}")
 
+# ============================================================================
+# SPOTIFY THEME STYLING
+# ============================================================================
+
+SPOTIFY_GREEN = "#1DB954"
+DARK_BG = "#000000"
+CARD_BG = "#121212"
+TEXT_COLOR = "#FFFFFF"
+
+# Set full app background to black
+st.markdown(
+    """
+    <style>
+    /* --- MAIN APP BACKGROUND --- */
+    .stApp {
+        background-color: #121212;
+        color: #FFFFFF;
+    }
+
+    /* --- REMOVE WHITE TOP BAR --- */
+    header {
+        background-color: #121212 !important;
+    }
+
+    /* --- MAIN CONTENT AREA --- */
+    .main {
+        background-color: #121212;
+    }
+
+    /* --- MAIN CONTAINER --- */
+    .block-container {
+        background-color: #121212;
+        padding: 2rem;
+    }
+
+    /* --- SIDEBAR --- */
+    section[data-testid="stSidebar"] {
+        background-color: #0e0e0e;
+        border-right: 2px solid #1DB954;
+    }
+
+    /* --- REMOVE ANY REMAINING WHITE --- */
+    div[data-testid="stAppViewContainer"] {
+        background-color: #121212;
+    }
+
+    /* --- TEXT --- */
+    h1, h2, h3, h4, h5, h6 {
+        color: #FFFFFF;
+    }
+
+    p, span, div {
+        color: #FFFFFF;
+    }
+
+    /* --- BUTTON STYLE --- */
+div.stButton > button {
+    background-color: #FFFFFF;
+    color: #000000 !important;   /* 👈 force black text */
+    border-radius: 10px;
+    border: none;
+    padding: 0.6em 1em;
+    transition: all 0.2s ease-in-out;
+}
+
+/* --- BUTTON TEXT (fix inner span) --- */
+div.stButton > button * {
+    color: #000000 !important;   /* 👈 ensures text inside is black */
+}
+
+/* --- BUTTON HOVER --- */
+div.stButton > button:hover {
+    background-color: #1DB954;
+    color: #000000 !important;
+}
+
+/* --- BUTTON HOVER TEXT --- */
+div.stButton > button:hover * {
+    color: #FFFFFF !important;
+}
+
+/* --- BUTTON CLICK --- */
+div.stButton > button:active {
+    transform: scale(0.98);
+}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 # ============================================================================
 # MAIN APP - Page routing
 # ============================================================================
