@@ -260,6 +260,34 @@ def get_top_tracks_for_artist(selected_artist_name, db_path):
 
     return top_5[['track_name', 'track_popularity']]
 
+def load_collaboration_data(db_path):
+    connection = sqlite3.connect(db_path)
+
+    df_tracks = pd.read_sql("""
+        SELECT id, track_popularity
+        FROM tracks_data
+        WHERE track_popularity IS NOT NULL
+    """, connection)
+
+    df_collab = pd.read_sql("""
+        SELECT track_id, artist_0, artist_1
+        FROM albums_data
+    """, connection)
+
+    connection.close()
+
+    df = pd.merge(df_collab, df_tracks, left_on="track_id", right_on="id", how="inner")
+
+    # collaboration logic (reuse your own function)
+    def is_collaboration(row):
+        return str(row["artist_1"]).strip().lower() not in ["", "none"]
+
+    df["is_collab"] = df.apply(is_collaboration, axis=1)
+
+    return df
+
+
+
 # ============================================================================
 # PAGE FUNCTIONS
 # ============================================================================
@@ -398,29 +426,70 @@ def home_page():
         fig5.tight_layout()
         st.pyplot(fig5, use_container_width=True)
 
-    #Plot 6: Explicit vs Non-Explicit tracks
+
+    #Pots 6&7: Explicit and Collaborations
     st.markdown("---")
-    st.subheader("Explicit vs Non-Explicit Tracks")
+    st.subheader("Explicitness and Collaborations")
 
-    df_explicit = load_explicit_data(db_path)
-    if not df_explicit.empty:
-        explicit_mean = df_explicit[df_explicit["explicit_num"] == 1]["track_popularity"].mean()
-        non_explicit_mean = df_explicit[df_explicit["explicit_num"] == 0]["track_popularity"].mean()
+    col1, col2 = st.columns(2)
 
-        col1, col2 = st.columns(2)
-        col1.metric("Explicit Avg Popularity", f"{explicit_mean:.2f}")
-        col2.metric("Non-Explicit Avg Popularity", f"{non_explicit_mean:.2f}")
+    #Explicit content analysis
+    with col1:
+        df_explicit = load_explicit_data(db_path)
 
-        fig_explicit = go.Figure()
-        fig_explicit.add_trace(go.Bar(
-            x=["Non-Explicit", "Explicit"],
-            y=[non_explicit_mean, explicit_mean]
-        ))
-        fig_explicit.update_layout(
-            title="Average Popularity: Explicit vs Non-Explicit",
-            yaxis_title="Popularity"
-        )
-        st.plotly_chart(fig_explicit, use_container_width=True)
+        if not df_explicit.empty:
+            explicit_mean = df_explicit[df_explicit["explicit_num"] == 1]["track_popularity"].mean()
+            non_explicit_mean = df_explicit[df_explicit["explicit_num"] == 0]["track_popularity"].mean()
+
+            m1, m2 = st.columns(2)
+            with m1:
+                st.metric("Explicit Avg", f"{explicit_mean:.2f}")
+            with m2:
+                st.metric("Non-Explicit Avg", f"{non_explicit_mean:.2f}")
+
+            fig_explicit = go.Figure()
+            fig_explicit.add_trace(go.Bar(
+                x=["Non-Explicit", "Explicit"],
+                y=[non_explicit_mean, explicit_mean],
+                marker_color=["#4C72B0", "#E64A19"]
+            ))
+
+            fig_explicit.update_layout(
+                title="Explicit vs Popularity",
+                yaxis_title="Popularity"
+            )
+
+            st.plotly_chart(fig_explicit, use_container_width=True)
+
+    #Collaboration analysis
+    with col2:
+        df_collab = load_collaboration_data(db_path)
+
+        if not df_collab.empty:
+            mean_values = df_collab.groupby("is_collab")["track_popularity"].mean()
+
+            solo = mean_values.get(False, 0)
+            collab = mean_values.get(True, 0)
+
+            m1, m2 = st.columns(2)
+            with m1:
+                st.metric("Solo Avg", f"{solo:.2f}")
+            with m2:
+                st.metric("Collab Avg", f"{collab:.2f}")
+
+            fig_collab = go.Figure()
+            fig_collab.add_trace(go.Bar(
+                x=["Solo", "Collaboration"],
+                y=[solo, collab],
+                marker_color=["#4C72B0", "#E64A19"]
+            ))
+
+            fig_collab.update_layout(
+                title="Collaboration vs Popularity",
+                yaxis_title="Popularity"
+            )
+
+            st.plotly_chart(fig_collab, use_container_width=True)
 
 def feature_genre_analysis_page():
     """Feature & Genre Analysis page content"""
@@ -702,7 +771,7 @@ def feature_genre_analysis_page():
                         x=low_counts.values,
                         y=low_counts.index,
                         orientation='h',
-                        title=f"Top Genres (Very low {selected_feature})"
+                        title=f"Very low {selected_feature}"
                     )
                     fig_low.update_layout(
                         yaxis=dict(categoryorder='total ascending'),
@@ -715,7 +784,7 @@ def feature_genre_analysis_page():
                         x=high_counts.values,
                         y=high_counts.index,
                         orientation='h',
-                        title=f"Top Genres (Very high {selected_feature})"
+                        title=f"Very high {selected_feature}"
                     )
                     fig_high.update_layout(
                         yaxis=dict(categoryorder='total ascending'),
