@@ -114,6 +114,22 @@ def load_joined_data(db_path):
     return df
 
 @st.cache_data
+def load_explicit_data(db_path):
+    connection = sqlite3.connect(db_path)
+    df = pd.read_sql("""
+        SELECT track_popularity, explicit
+        FROM tracks_data
+        WHERE track_popularity IS NOT NULL
+        AND explicit IS NOT NULL
+    """, connection)
+    connection.close()
+
+    df["explicit_num"] = df["explicit"].astype(str).str.lower().map({"true": 1, "false": 0})
+    df = df.dropna(subset=["explicit_num"])
+
+    return df
+
+@st.cache_data
 def load_feature_data(db_path, feature):
     """Load feature data from database"""
     connection = sqlite3.connect(db_path)
@@ -249,6 +265,32 @@ def home_page():
         xaxis_title="Followers (log scale)",
         yaxis_title="Artist Popularity")
     st.plotly_chart(fig, use_container_width=True)
+
+# Explicit vs Non-Explicit tracks analysis
+    st.subheader("Explicit vs Non-Explicit Tracks")
+
+df_explicit = load_explicit_data(db_path)
+
+if not df_explicit.empty:
+    explicit_mean = df_explicit[df_explicit["explicit_num"] == 1]["track_popularity"].mean()
+    non_explicit_mean = df_explicit[df_explicit["explicit_num"] == 0]["track_popularity"].mean()
+
+    col1, col2 = st.columns(2)
+    col1.metric("Explicit Avg Popularity", f"{explicit_mean:.2f}")
+    col2.metric("Non-Explicit Avg Popularity", f"{non_explicit_mean:.2f}")
+
+    fig_explicit = go.Figure()
+    fig_explicit.add_trace(go.Bar(
+        x=["Non-Explicit", "Explicit"],
+        y=[non_explicit_mean, explicit_mean]
+    ))
+
+    fig_explicit.update_layout(
+        title="Average Popularity: Explicit vs Non-Explicit",
+        yaxis_title="Popularity"
+    )
+
+    st.plotly_chart(fig_explicit, use_container_width=True)
 
     # Descriptive summary table for popularity and followers
     summary_df = pd.DataFrame({
