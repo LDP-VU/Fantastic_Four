@@ -650,7 +650,7 @@ def feature_genre_analysis_page():
 
             #Genres hig hand low on specific feature
             st.markdown("---")
-            st.subheader("Genres in Very Low vs Very High Feature Values")
+            st.subheader(f"Genres low and high in {selected_feature}")
 
             df_genre_feat = load_genre_feature_data(db_path, selected_feature)
             if not df_genre_feat.empty:
@@ -660,13 +660,26 @@ def feature_genre_analysis_page():
                 df_genre_feat["level"] = pd.qcut(
                     df_genre_feat["feature_value"],
                     q=5,
-                    labels=["very low", "low", "medium", "high", "very high"]
+                    labels=["very low", "low", "medium", "high", "very high"],
+                    duplicates="drop"
                 )
 
                 def count_genres(df_subset):
                     genres = []
                     for col in ["genre_1", "genre_2", "genre_3", "genre_4"]:
-                        genres.extend(df_subset[col].dropna().astype(str))
+                        cleaned = (
+                            df_subset[col]
+                            .dropna()
+                            .astype(str)
+                            .str.strip()
+                        )
+                        # REMOVE bad values
+                        cleaned = cleaned[
+                            (cleaned != "") &
+                            (cleaned.str.lower() != "nan") &
+                            (cleaned.str.lower() != "none")
+                        ]
+                        genres.extend(cleaned)
                     return pd.Series(genres).value_counts().head(10)
 
                 low_counts = count_genres(df_genre_feat[df_genre_feat["level"] == "very low"])
@@ -677,7 +690,12 @@ def feature_genre_analysis_page():
                         x=low_counts.values,
                         y=low_counts.index,
                         orientation='h',
-                        title=f"Top Genres (Very Low {selected_feature})"
+                        title=f"Top Genres (Very low {selected_feature})"
+                    )
+                    fig_low.update_layout(
+                        yaxis=dict(categoryorder='total ascending'),
+                        showlegend=False,
+                        margin=dict(l=0, r=0, t=40, b=0)
                     )
                     st.plotly_chart(fig_low, use_container_width=True)
                 with col2:
@@ -685,7 +703,12 @@ def feature_genre_analysis_page():
                         x=high_counts.values,
                         y=high_counts.index,
                         orientation='h',
-                        title=f"Top Genres (Very High {selected_feature})"
+                        title=f"Top Genres (Very high {selected_feature})"
+                    )
+                    fig_high.update_layout(
+                        yaxis=dict(categoryorder='total ascending'),
+                        showlegend=False,
+                        margin=dict(l=0, r=0, t=40, b=0)
                     )
                     st.plotly_chart(fig_high, use_container_width=True)
             else:
