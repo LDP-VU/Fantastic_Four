@@ -266,32 +266,6 @@ def home_page():
         yaxis_title="Artist Popularity")
     st.plotly_chart(fig, use_container_width=True)
 
-# Explicit vs Non-Explicit tracks analysis
-    st.subheader("Explicit vs Non-Explicit Tracks")
-
-df_explicit = load_explicit_data(db_path)
-
-if not df_explicit.empty:
-    explicit_mean = df_explicit[df_explicit["explicit_num"] == 1]["track_popularity"].mean()
-    non_explicit_mean = df_explicit[df_explicit["explicit_num"] == 0]["track_popularity"].mean()
-
-    col1, col2 = st.columns(2)
-    col1.metric("Explicit Avg Popularity", f"{explicit_mean:.2f}")
-    col2.metric("Non-Explicit Avg Popularity", f"{non_explicit_mean:.2f}")
-
-    fig_explicit = go.Figure()
-    fig_explicit.add_trace(go.Bar(
-        x=["Non-Explicit", "Explicit"],
-        y=[non_explicit_mean, explicit_mean]
-    ))
-
-    fig_explicit.update_layout(
-        title="Average Popularity: Explicit vs Non-Explicit",
-        yaxis_title="Popularity"
-    )
-
-    st.plotly_chart(fig_explicit, use_container_width=True)
-
     # Descriptive summary table for popularity and followers
     summary_df = pd.DataFrame({
         "Statistic": ["Mean", "Median", "Std", "Min", "Max"],
@@ -340,6 +314,32 @@ if not df_explicit.empty:
         plt.suptitle("")
         fig5.tight_layout()
         st.pyplot(fig5, use_container_width=True)
+
+    st.markdown("---")
+    st.subheader("Non-Explicit vs Explicit tracks")
+
+    df_explicit = load_explicit_data(db_path)
+
+    if not df_explicit.empty:
+        explicit_mean = df_explicit[df_explicit["explicit_num"] == 1]["track_popularity"].mean()
+        non_explicit_mean = df_explicit[df_explicit["explicit_num"] == 0]["track_popularity"].mean()
+
+        col1, col2 = st.columns(2)
+        col1.metric("Non-Explicit Avg Popularity", f"{non_explicit_mean:.2f}")
+        col2.metric("Explicit Avg Popularity", f"{explicit_mean:.2f}")
+
+        fig_explicit = go.Figure()
+        fig_explicit.add_trace(go.Bar(
+            x=["Non-Explicit", "Explicit"],
+            y=[non_explicit_mean, explicit_mean]
+        ))
+
+        fig_explicit.update_layout(
+            title="Average Popularity: Explicit vs Non-Explicit",
+            yaxis_title="Popularity"
+        )
+
+        st.plotly_chart(fig_explicit, use_container_width=True)
 
 def feature_genre_analysis_page():
     """Feature & Genre Analysis page content"""
