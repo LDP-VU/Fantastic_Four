@@ -485,6 +485,7 @@ def feature_genre_analysis_page():
         
         # Get top artists for selected genre
         result = top_10_by_genre(selected_genre, df_artists)
+        result = result.sort_values(by="artist_popularity", ascending=True)
         
         if not result.empty:
             # Display metrics
@@ -553,6 +554,9 @@ def feature_genre_analysis_page():
             ).explode("artist")
             
             # Get artist counts
+            expanded = expanded.dropna(subset=["artist"])
+            expanded = expanded[expanded["artist"].str.strip() != ""]
+            expanded = expanded[expanded["artist"].str.lower() != "nan"]
             artist_counts = expanded.groupby("artist").size().sort_values(ascending=False)
             
             # Display metrics
@@ -657,11 +661,19 @@ def feature_genre_analysis_page():
                 df_genre_feat = df_genre_feat.dropna(subset=["feature_value"])
 
                 # Create quantiles
-                df_genre_feat["level"] = pd.qcut(
+                labels_full = ["very low", "low", "medium", "high", "very high"]
+                df_genre_feat["level"] = pd.cut(
                     df_genre_feat["feature_value"],
-                    q=5,
-                    labels=["very low", "low", "medium", "high", "very high"],
-                    duplicates="drop"
+                    bins=[0, 0.2, 0.4, 0.6, 0.8, 1.0],
+                    labels=labels_full,
+                    include_lowest=True
+                )
+                n_bins = df_genre_feat["level"].nunique()
+                df_genre_feat["level"] = pd.cut(
+                    df_genre_feat["feature_value"],
+                    bins=[0, 0.2, 0.4, 0.6, 0.8, 1.0],
+                    labels=labels_full,
+                    include_lowest=True
                 )
 
                 def count_genres(df_subset):
