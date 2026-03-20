@@ -503,6 +503,7 @@ def get_total_tracks(db_path):
 # ============================================================================
 # PAGE FUNCTIONS
 # ============================================================================
+
 def feature_count_scatter(df_features, selected_feature, selected_percent):
     import numpy as np
     import plotly.graph_objects as go
@@ -564,7 +565,6 @@ def feature_count_scatter(df_features, selected_feature, selected_percent):
     )
 
     return fig
-
 
 def home_page():
     """Home page / Opening page content"""
@@ -640,11 +640,46 @@ def home_page():
 
     # Plot 3: Followers vs Popularity scatter plot
     fig = px.scatter(
-        df,
-        x="followers",
-        y="artist_popularity",
-        hover_name="name",
-        opacity=0.4)
+    df,
+    x="followers",
+    y="artist_popularity",
+    hover_name="name",
+    opacity=0.4
+    )
+
+    # --- Compute regression on log scale ---
+    
+    df_reg = df[["followers", "artist_popularity"]].copy()
+
+    # Keep only numeric, non-missing, positive followers
+    df_reg["followers"] = pd.to_numeric(df_reg["followers"], errors="coerce")
+    df_reg["artist_popularity"] = pd.to_numeric(df_reg["artist_popularity"], errors="coerce")
+
+    df_reg = df_reg.dropna()
+    df_reg = df_reg[df_reg["followers"] > 0]
+
+    x = df_reg["followers"]
+    y = df_reg["artist_popularity"]
+
+    x_log = np.log10(x)
+
+    # Correlation and R^2
+    corr = np.corrcoef(x_log, y)[0, 1]
+    r_squared = corr**2
+
+    # Line of best fit
+    m, b = np.polyfit(x_log, y, 1)
+
+    x_line = np.linspace(x_log.min(), x_log.max(), 100)
+    y_line = m * x_line + b
+
+    # --- Add regression line ---
+    fig.add_trace(
+        go.Scatter(
+            x=10**x_line,   # convert back from log
+            y=y_line,
+            mode="lines",
+            name="Best Fit",
             line=dict(color="black", width=5, dash="dash")
         )
     )
