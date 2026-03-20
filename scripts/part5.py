@@ -629,14 +629,35 @@ def feature_genre_analysis_page():
             artist_counts = expanded.groupby("artist").size().sort_values(ascending=False)
             
             # Display metrics
+            #Define units for the features
+            units = {
+                "tempo": "BPM",
+                "loudness": "dB",
+                "danceability": "score",
+                "energy": "score",
+                "valence": "score",
+                "acousticness": "score",
+                "speechiness": "score",
+                "instrumentalness": "score"
+            }
+
+            # Get the unit for  current selection
+            unit = units.get(selected_feature, "")
+
+            # 2. Updated Metrics with Units and Tooltips
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric("Total tracks", len(df_features))
+                st.metric("Total tracks", f"{len(df_features):,}")
             with col2:
                 st.metric(f"Top {selected_percent}% tracks", len(top_tracks))
             with col3:
-                st.metric("Threshold", f"{threshold:.3f}")
-            
+                # We add the unit to the value and a descriptive tooltip
+                st.metric(
+                    label="Threshold",
+                    value=f"{threshold:.2f} {unit}",
+                    help=f"To be in the top {selected_percent}% for {selected_feature}, "
+                         f"a track must have a value of at least {threshold:.2f} {unit}."
+                )
             st.markdown("---")
             
             # Two columns for display
