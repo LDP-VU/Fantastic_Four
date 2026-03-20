@@ -566,7 +566,6 @@ def feature_count_scatter(df_features, selected_feature, selected_percent):
     return fig
 
 
-
 def home_page():
     """Home page / Opening page content"""
     # Load data
@@ -646,11 +645,33 @@ def home_page():
         y="artist_popularity",
         hover_name="name",
         opacity=0.4)
+            line=dict(color="black", width=5, dash="dash")
+        )
+    )
+
+    # --- Add annotation (top-right) ---
+    fig.add_annotation(
+        x=1.07,
+        y=0.90,
+        xref="paper",
+        yref="paper",
+        text=f"r = {corr:.3f}<br>R² = {r_squared:.3f}",
+        showarrow=False,
+        align="right",
+        font=dict(size=14, color="black"),
+        bgcolor="white",
+        bordercolor="black",
+        borderwidth=1
+    )
+
+    # --- Layout ---
     fig.update_xaxes(type="log")
     fig.update_layout(
         title="Relationship: Followers vs Artist Popularity",
         xaxis_title="Followers (log scale)",
-        yaxis_title="Artist Popularity")
+        yaxis_title="Artist Popularity"
+    )
+
     st.plotly_chart(fig, use_container_width=True)
 
     # Plot 4: Top 10 genres
