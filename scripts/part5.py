@@ -9,6 +9,205 @@ import os
 import sys
 import ast
 
+# ============================================================================
+# SPOTIFY THEME STYLING
+# ============================================================================
+
+SPOTIFY_GREEN = "#1DB954"
+DARK_BG = "#000000"
+CARD_BG = "#121212"
+TEXT_COLOR = "#FFFFFF"
+
+# Set full app background to black
+st.markdown(
+    """
+    <style>
+    /* --- MAIN APP BACKGROUND --- */
+    .stApp {
+        background-color: #121212;
+        color: #FFFFFF;
+    }
+
+    /* --- REMOVE WHITE TOP BAR --- */
+    header {
+        background-color: #121212 !important;
+    }
+
+    /* --- MAIN CONTENT AREA --- */
+    .main {
+        background-color: #121212;
+    }
+
+    /* --- MAIN CONTAINER --- */
+    .block-container {
+        background-color: #121212;
+        padding: 2rem;
+    }
+
+    /* --- SIDEBAR --- */
+    section[data-testid="stSidebar"] {
+        background-color: #0e0e0e;
+        border-right: 2px solid #1DB954;
+    }
+
+    /* --- REMOVE ANY REMAINING WHITE --- */
+    div[data-testid="stAppViewContainer"] {
+        background-color: #121212;
+    }
+
+    /* --- TEXT --- */
+    h1, h2, h3, h4, h5, h6 {
+        color: #FFFFFF;
+    }
+
+    p, span, div {
+        color: #FFFFFF;
+    }
+
+    /* --- BUTTON STYLE --- */
+div.stButton > button {
+    background-color: #FFFFFF;
+    color: #000000 !important;   
+    border-radius: 10px;
+    border: none;
+    padding: 0.6em 1em;
+    transition: all 0.2s ease-in-out;
+}
+
+/* --- BUTTON TEXT (fix inner span) --- */
+div.stButton > button * {
+    color: #000000 !important;   
+}
+
+/* --- BUTTON HOVER --- */
+div.stButton > button:hover {
+    background-color: #1DB954;
+    color: #000000 !important;
+}
+
+/* --- BUTTON HOVER TEXT --- */
+div.stButton > button:hover * {
+    color: #FFFFFF !important;
+}
+
+/* --- BUTTON CLICK --- */
+div.stButton > button:active {
+    transform: scale(0.98);
+}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+# artist search black text
+
+st.markdown(
+    """
+    <style>
+    /* Selected text / typed text inside the selectbox */
+    div[data-baseweb="select"] input {
+        color: black !important;
+        -webkit-text-fill-color: black !important;
+    }
+
+    /* Placeholder text */
+    div[data-baseweb="select"] input::placeholder {
+        color: #666666 !important;
+        -webkit-text-fill-color: #666666 !important;
+        opacity: 1 !important;
+    }
+
+    /* The visible selected value in the box */
+    div[data-baseweb="select"] span {
+        color: black !important;
+        -webkit-text-fill-color: black !important;
+    }
+
+    /* The selectbox background itself */
+    div[data-baseweb="select"] > div {
+        background-color: #f2f2f2 !important;
+        color: black !important;
+        border-radius: 12px !important;
+    }
+
+    /* Dropdown popup container */
+    div[data-baseweb="popover"] {
+        background-color: white !important;
+    }
+
+    /* Dropdown list */
+    ul[role="listbox"] {
+        background-color: white !important;
+    }
+
+    /* Each dropdown option */
+    li[role="option"] {
+        background-color: white !important;
+        color: black !important;
+    }
+
+    /* Text inside each option */
+    li[role="option"] * {
+        color: black !important;
+        -webkit-text-fill-color: black !important;
+    }
+
+    /* Hovered option */
+    li[role="option"]:hover {
+        background-color: #eaeaea !important;
+        color: black !important;
+    }
+
+    li[role="option"]:hover * {
+        color: black !important;
+        -webkit-text-fill-color: black !important;
+
+    }
+     div[data-baseweb="select"] div {
+        color: black !important;
+        -webkit-text-fill-color: black !important;
+    }
+
+    div[data-baseweb="select"] [class*="singleValue"] {
+        color: black !important;
+        -webkit-text-fill-color: black !important;
+    }
+
+    div[data-baseweb="select"] * {
+        color: black !important;
+        -webkit-text-fill-color: black !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+# tool tip ?
+st.markdown("""
+    <style>
+    /* 1. Change the Question Mark (SVG) to White */
+    /* This targets the help icon inside the metric */
+    [data-testid="stMetric"] svg {
+        fill: white !important;
+        color: white !important;
+        opacity: 1 !important;
+    }
+
+    /* 2. Change the Tooltip Box background to White and Text to Black */
+    /* Note: Streamlit uses a portal for tooltips, so we target the tooltip content */
+    div[data-active-tab="true"] + div .stTooltipHoverTarget, 
+    .stTooltipContent {
+        background-color: white !important;
+        color: black !important;
+        border: 1px solid #ccc;
+    }
+    
+    /* This specifically targets the text inside the pop-up */
+    .stTooltipContent div {
+        color: black !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+
 db_path = os.path.join(os.path.dirname(__file__), '..', 'spotify_database.db')
 
 
@@ -846,7 +1045,7 @@ def artist_search_page():
                 popularity = row['track_popularity']
 
                 # Displaying in the format: 1. Song Name - Popularity: 85
-                st.write(f"{i}. **{track_name}** — Popularity: `{popularity}`")
+                st.write(f"{i}. **{track_name}** - Popularity: `{popularity}`")
         else:
             st.write("No track data found for this artist.")
 
@@ -955,100 +1154,6 @@ def trends_over_time_page():
         st.plotly_chart(fig, use_container_width=True)
 
 
-    # Table of actual yearly means for selected year range
-    with st.expander("Show yearly averages table"):
-        st.dataframe(yearly_means, use_container_width=True)
-    st.caption(f"Years shown: {start_year}–{end_year}")
-
-# ============================================================================
-# SPOTIFY THEME STYLING
-# ============================================================================
-
-SPOTIFY_GREEN = "#1DB954"
-DARK_BG = "#000000"
-CARD_BG = "#121212"
-TEXT_COLOR = "#FFFFFF"
-
-# Set full app background to black
-st.markdown(
-    """
-    <style>
-    /* --- MAIN APP BACKGROUND --- */
-    .stApp {
-        background-color: #121212;
-        color: #FFFFFF;
-    }
-
-    /* --- REMOVE WHITE TOP BAR --- */
-    header {
-        background-color: #121212 !important;
-    }
-
-    /* --- MAIN CONTENT AREA --- */
-    .main {
-        background-color: #121212;
-    }
-
-    /* --- MAIN CONTAINER --- */
-    .block-container {
-        background-color: #121212;
-        padding: 2rem;
-    }
-
-    /* --- SIDEBAR --- */
-    section[data-testid="stSidebar"] {
-        background-color: #0e0e0e;
-        border-right: 2px solid #1DB954;
-    }
-
-    /* --- REMOVE ANY REMAINING WHITE --- */
-    div[data-testid="stAppViewContainer"] {
-        background-color: #121212;
-    }
-
-    /* --- TEXT --- */
-    h1, h2, h3, h4, h5, h6 {
-        color: #FFFFFF;
-    }
-
-    p, span, div {
-        color: #FFFFFF;
-    }
-
-    /* --- BUTTON STYLE --- */
-div.stButton > button {
-    background-color: #FFFFFF;
-    color: #000000 !important;   /* 👈 force black text */
-    border-radius: 10px;
-    border: none;
-    padding: 0.6em 1em;
-    transition: all 0.2s ease-in-out;
-}
-
-/* --- BUTTON TEXT (fix inner span) --- */
-div.stButton > button * {
-    color: #000000 !important;   /* 👈 ensures text inside is black */
-}
-
-/* --- BUTTON HOVER --- */
-div.stButton > button:hover {
-    background-color: #1DB954;
-    color: #000000 !important;
-}
-
-/* --- BUTTON HOVER TEXT --- */
-div.stButton > button:hover * {
-    color: #FFFFFF !important;
-}
-
-/* --- BUTTON CLICK --- */
-div.stButton > button:active {
-    transform: scale(0.98);
-}
-    </style>
-    """,
-    unsafe_allow_html=True
-)
 # ============================================================================
 # MAIN APP - Page routing
 # ============================================================================
