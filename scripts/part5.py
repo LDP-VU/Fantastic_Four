@@ -7,7 +7,7 @@ import plotly.express as px
 import matplotlib.pyplot as plt
 import os
 import sys
-import ast
+import ast    
 
 # ============================================================================
 # SPOTIFY THEME STYLING
@@ -503,6 +503,69 @@ def get_total_tracks(db_path):
 # ============================================================================
 # PAGE FUNCTIONS
 # ============================================================================
+def feature_count_scatter(df_features, selected_feature, selected_percent):
+    import numpy as np
+    import plotly.graph_objects as go
+
+    df_plot = df_features.dropna(subset=[selected_feature]).copy()
+
+    threshold = df_plot[selected_feature].quantile(1 - selected_percent / 100)
+
+    counts, bin_edges = np.histogram(df_plot[selected_feature], bins=40)
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+    fig = go.Figure()
+
+    fig.add_trace(
+        go.Scatter(
+            x=bin_centers,
+            y=counts,
+            mode="markers+lines",
+            name="Track count",
+            marker=dict(size=8, color="#1DB954"),
+            line=dict(color="#1DB954", width=2),
+            hovertemplate=
+            "<b>Feature value:</b> %{x:.3f}<br>" +
+            "<b>Count:</b> %{y}<extra></extra>"
+        )
+    )
+
+    fig.add_vline(
+        x=threshold,
+        line_width=3,
+        line_dash="dash",
+        line_color="#ff4b4b"
+    )
+
+    max_count = counts.max()
+
+    fig.add_annotation(
+        x=threshold,
+        y=max_count,
+        text=f"Top {selected_percent}% threshold = {threshold:.3f}",
+        showarrow=True,
+        arrowhead=2,
+        ax=120,
+        ay=-40,
+        bgcolor="white",
+        bordercolor="black",
+        font=dict(color="black")
+    )
+
+    fig.update_layout(
+        title=f"{selected_feature.capitalize()} vs Count of Tracks",
+        xaxis_title=selected_feature.capitalize(),
+        yaxis_title="Count of Tracks",
+        plot_bgcolor="#f2f2f2",
+        paper_bgcolor="#f2f2f2",
+        font=dict(color="black"),
+        height=400, #350 
+        margin=dict(l=20, r=20, t=40, b=30)  # tighter spacing
+    )
+
+    return fig
+
+
 
 def home_page():
     """Home page / Opening page content"""
@@ -589,24 +652,6 @@ def home_page():
         xaxis_title="Followers (log scale)",
         yaxis_title="Artist Popularity")
     st.plotly_chart(fig, use_container_width=True)
-
-    # Descriptive summary table for popularity and followers
-    summary_df = pd.DataFrame({
-        "Statistic": ["Mean", "Median", "Std", "Min", "Max"],
-        "Popularity": [
-            df["artist_popularity"].mean(),
-            df["artist_popularity"].median(),
-            df["artist_popularity"].std(),
-            df["artist_popularity"].min(),
-            df["artist_popularity"].max()],
-        "Followers": [
-            df["followers"].mean(),
-            df["followers"].median(),
-            df["followers"].std(),
-            df["followers"].min(),
-            df["followers"].max()]})
-    with st.expander("Descriptive Statistics for Popularity and Followers"):
-        st.dataframe(summary_df.round(2), use_container_width=True)
 
     # Plot 4: Top 10 genres
     st.markdown("### Genres")
@@ -808,9 +853,6 @@ def feature_genre_analysis_page():
             
             st.plotly_chart(fig, use_container_width=True)
             
-            # Show table
-            with st.expander("View as table"):
-                st.dataframe(result.head(10), use_container_width=True)
         else:
             st.warning(f"No artists found for genre: {selected_genre}")
 
@@ -875,30 +917,8 @@ def feature_genre_analysis_page():
             
             # Two columns for display
             col_left, col_right = st.columns(2)
-            
+                
             with col_left:
-                st.subheader(f"Top Tracks by {selected_feature.capitalize()}")
-                
-                # Display top tracks
-                display_tracks = top_tracks[["track_name", "artist_0", selected_feature]]\
-                    .sort_values(by=selected_feature, ascending=False)\
-                    .head(10)
-                
-                fig_tracks = go.Figure(data=[go.Table(
-                    header=dict(values=["Track", "Artist", selected_feature.capitalize()],
-                               fill_color='lightgray',
-                               align='left'),
-                    cells=dict(values=[display_tracks['track_name'], 
-                                      display_tracks['artist_0'],
-                                      display_tracks[selected_feature].round(3)],
-                              fill_color='white',
-                              align='left')
-                )])
-                
-                fig_tracks.update_layout(height=400)
-                st.plotly_chart(fig_tracks, use_container_width=True)
-            
-            with col_right:
                 st.subheader("Top Artists by Track Count")
                 
                 if not artist_counts.empty:
@@ -923,37 +943,18 @@ def feature_genre_analysis_page():
                     
                     st.plotly_chart(fig_artists, use_container_width=True)
             
-            # Show full statistics in expander
-            with st.expander("View detailed statistics"):
-                # Artist statistics
-                st.subheader("Artist Statistics")
-                artist_stats = expanded.groupby("artist").agg(
-                    avg_feature=(selected_feature, "mean"),
-                    num_tracks=(selected_feature, "count")
-                ).sort_values(by="num_tracks", ascending=False)
-                
-                st.dataframe(artist_stats.head(20), use_container_width=True)
-                
+            with col_right:
                 # Feature distribution
                 st.subheader("Feature Distribution")
-                fig_dist = go.Figure()
-                fig_dist.add_trace(go.Histogram(
-                    x=df_features[selected_feature],
-                    nbinsx=50,
-                    name="All tracks"
-                ))
-                fig_dist.add_trace(go.Histogram(
-                    x=top_tracks[selected_feature],
-                    nbinsx=30,
-                    name=f"Top {selected_percent}%"
-                ))
-                fig_dist.update_layout(
-                    title=f"Distribution of {selected_feature.capitalize()}",
-                    xaxis_title=selected_feature.capitalize(),
-                    yaxis_title="Count",
-                    barmode='overlay'
-                )
-                st.plotly_chart(fig_dist, use_container_width=True)
+
+                fig_scatter = feature_count_scatter(
+                df_features,
+                 selected_feature,
+                selected_percent
+            )
+
+                st.plotly_chart(fig_scatter, use_container_width=True)
+               
 
             #Genres hig hand low on specific feature
             st.markdown("---")
