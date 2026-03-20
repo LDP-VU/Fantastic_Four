@@ -1,38 +1,24 @@
 # Spotify Database Data Analysis and Visualization Dashboard
 This project analyses a dataset provided by **Spotify (2023)** containing information about artists, albums, tracks, and audio features. A python-based analysis is carried out to explore relationships between variables, and create statistical analyses and visualizations. The final outcome is a dashboard showing key figures, statistics and insights from the Spotify dataset.
 
-## Table of contents 
-1. [Repository Structure](#repository-structure)  
-2. [Data Source](#data-source)  
-3. [Tools and Packages Used](#tools-and-packages-used)  
-4. [How to Run the Dashboard](#how-to-run-the-dashboard)  
-5. [Dashboard Walkthrough](#dashboard-walkthrough)  
-6. [Notes](#notes)  
-7. [Contact](#contact)
-
-## Repository Structure 
- weird dash thing EDIT
-│
-├── Data/
-│ ├── complete.csv
-│ ├── covid_database.db
-│ ├── day_wise.csv
-│ 
-├── Scripts/
-│ ├── partOne.py
-│ ├── query_database.py
-│ ├── partThree.py
-│ ├── partFour.py
-│ ├── dashboard.py
-│ 
+## Repository Structure
+```
+.
+├── plots/                  
+├── scripts/                
+│   ├── part1.py
+│   ├── part3.py
+│   ├── part4.py
+│   └── part5.py
+├── artist_data.csv         
+├── spotify_database.db    
 ├── README.md
-├── requirements.txt # Vereiste Python-pakketten
-- **data/** contains the Spotify database used for the analysis  
+└── .gitignore
+```
+- **plots/** stores generated visualizations
 - **scripts/** contains Python scripts used for analysis and visualization  
-- **dashboard/** contains the dashboard application  
-- **figures/** stores generated visualizations  
-
-## Data source
+  
+## Data Source
 Data from the SQLite database file "spotify_database.db" is used and analysed. 
 This database contains the following tabular datasets:
 
@@ -77,39 +63,73 @@ Examples features include:
 
 ## How to Run the Dashboard
 1. Clone the repository 
-2. Install all required packages. 
-    Run this in your terminal: pip install streamlit pandas matplotlib plotly numpy 
-3. Navigate to the `Scripts` directory in your terminal.
-4. Run the following command:
+2. Install all required packages. Run this in your terminal:
+   ```bash
+   pip install streamlit pandas matplotlib plotly numpy
+   ```
+4. Navigate to the `Scripts` directory in your terminal.
+5. Run the following command:
    ```bash
    streamlit run dashboard.py
-5. The app will open in your default browser at http://localhost:8501.
-
+   ```
+6. The app will open in your default browser at http://localhost:8501.
 
 ## Dashboard Walkthrough
-The Dashboard consists of a homepage and .... interactive 
+### Navigation
+The dashboard is organized into four main sections, accessible via the sidebar:
+- **Home**
+- **Feature & Genre Analysis**
+- **Artist Search**
+- **Trends Over Time**
 
-### General results
-- Key summary metrics (KPI cards) of mean, median, total, etc.
-- Histogram showing distribution of artist popularity
-- Bar chart of top 10 artists by followers
-- Interactive scatter plot of relationship between artist popularity vs follower count
-- Descriptive statistics table
-- Top 10 genres bar chart
-- Artist popularity by number of genres associated boxplot
+### Home
+Provides an overview of the dataset and key summary statistics.
 
-### Artists search filter
+#### Key Elements:
+- KPI metrics (e.g., average popularity, number of artists, average followers)
+- Distribution of artist popularity histogram
+- Top 10 artists by followers bar chart
+- Scatter plot of followers vs artist popularity (log-scaled)
+- Genre distribution and genre diversity analysis
+- Comparison of explicit vs non-explicit tracks
+- Comparison of solo vs collaborative tracks
 
+### Feature & Genre Analysis
+#### Genre Analysis
+- Select a genre (e.g., pop, rock, jazz)
+- Output:
+  - Top 10 artists in that genre
+  - Average popularity within the genre
+  - Total number of artists associated with the genre
 
+#### Feature Analysis
+- Select an audio feature (e.g., danceability, energy, valence)
+- Adjust the percentage threshold for “top tracks”
+- Output:
+  - Top tracks for feature
+  - Top artist by feature
+  - Distribution of the selected feature
+  - Genres associated with very low vs very high feature values
 
-### Trends over time
-- Select a year range using the slider to focus on a specific time period.
-- Choose an audio feature (e.g., danceability, energy, valence, acousticness, tempo, speechiness, instrumentalness) from the dropdown menu.
-- Displays the yearly average value of the selected feature across all tracks in year range.
-- Includes a 10-year rolling average to reduce noise
-
-
-### Features filter
+### Artist Search
+Exploring individual artists
+#### Key Elements:
+- Search and select an artist from a cleaned dataset
+- Display:
+  - Artist popularity
+  - Number of followers
+  - Number of associated genres
+  - Explicit content ratio
+- View top 5 tracks by artist ranked by popularity
+  
+### Trends Over Time
+Analyzes how audio features evolve over time.
+#### Key Elements:
+- Year range slider
+- Feature selection dropdown
+- Outputs:
+  - Yearly average values of selected feature
+  - Smoothed trend (rolling average)
 
 ## Additional Functionality
 The dashboard uses cached data loading so that the dataset does not need to be reloaded every time the website is refreshed.
@@ -117,7 +137,6 @@ The dashboard uses cached data loading so that the dataset does not need to be r
 ## Notes
 This project was created as part of the Data Engineering course for the Bachelor Mathematics (Applied Mathematics: Data Science track) Vrije Universiteit Amsterdam.
 All code and analyses are educational and exploratory in nature.
-
 
 ## Contact
 Leo Du Preez
