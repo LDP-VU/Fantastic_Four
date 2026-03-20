@@ -181,32 +181,37 @@ st.markdown(
     unsafe_allow_html=True
 )
 # tool tip ?
-st.markdown("""
+st.markdown(
+    """
     <style>
-    /* 1. Change the Question Mark (SVG) to White */
-    /* This targets the help icon inside the metric */
+    /* Tooltip container (portal) */
+    div[data-baseweb="tooltip"] {
+        background-color: white !important;
+        color: black !important;
+        border: 1px solid #ccc !important;
+    }
+
+    /* Tooltip text */
+    div[data-baseweb="tooltip"] * {
+        color: black !important;
+        -webkit-text-fill-color: black !important;
+    }
+
+    /* Arrow (optional clean look) */
+    div[data-baseweb="tooltip"]::after {
+        border-top-color: white !important;
+    }
+
+    /* Help icon (question mark) */
     [data-testid="stMetric"] svg {
         fill: white !important;
         color: white !important;
         opacity: 1 !important;
     }
-
-    /* 2. Change the Tooltip Box background to White and Text to Black */
-    /* Note: Streamlit uses a portal for tooltips, so we target the tooltip content */
-    div[data-active-tab="true"] + div .stTooltipHoverTarget, 
-    .stTooltipContent {
-        background-color: white !important;
-        color: black !important;
-        border: 1px solid #ccc;
-    }
-    
-    /* This specifically targets the text inside the pop-up */
-    .stTooltipContent div {
-        color: black !important;
-    }
     </style>
-    """, unsafe_allow_html=True)
-
+    """,
+    unsafe_allow_html=True
+)
 
 db_path = os.path.join(os.path.dirname(__file__), '..', 'spotify_database.db')
 
@@ -485,6 +490,14 @@ def load_collaboration_data(db_path):
 
     return df
 
+# number of songs
+@st.cache_data
+def get_total_tracks(db_path):
+    connection = sqlite3.connect(db_path)
+    query = "SELECT COUNT(DISTINCT id) AS total_tracks FROM tracks_data"
+    result = pd.read_sql(query, connection)
+    connection.close()
+    return int(result.loc[0, "total_tracks"])
 
 
 # ============================================================================
@@ -495,6 +508,7 @@ def home_page():
     """Home page / Opening page content"""
     # Load data
     df = load_artist_data()
+    total_songs = get_total_tracks(db_path)
 
     st.title("Spotify Data Analysis Dashboard")
     st.write(""" 
@@ -529,7 +543,7 @@ def home_page():
     col5.metric("Number of genres", f"{num_genres}")
     col6.metric("Median popularity ( /100)", f"{median_popularity:.2f}")
     col7.metric("Median followers", f"{median_followers:,.0f}")
-    col8.metric("Total rows", f"{len(df):,}")
+    col8.metric("Total Tracks", f"{total_songs:,}")
 
     # Graphical summaries
     st.subheader("Followers vs Artist Popularity")
