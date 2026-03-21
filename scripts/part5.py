@@ -365,7 +365,6 @@ def load_explicit_data(db_path):
 
 @st.cache_data
 def load_genre_feature_data(db_path, feature):
-<<<<<<< HEAD
     connection = sqlite3.connect(db_path)
 
     df = pd.read_sql(f"""
@@ -386,42 +385,35 @@ def load_genre_feature_data(db_path, feature):
 
 
 @st.cache_data
-def get_artist_explicit_data(artist_name, db_path):
+def get_artist_explicit_ratio(artist_name, db_path):
     connection = sqlite3.connect(db_path)
-    # Using SQL JOIN is much faster than loading full tables into memory
-    query = """
-        SELECT t.explicit
+
+    df = pd.read_sql("""
+        SELECT t.explicit, a.artist_0
         FROM tracks_data t
         JOIN albums_data a ON t.id = a.track_id
-        WHERE LOWER(TRIM(a.artist_0)) = ?
-    """
-    df_artist = pd.read_sql(query, connection, params=(artist_name.lower().strip(),))
+    """, connection)
+
     connection.close()
+
+    df["artist_clean"] = df["artist_0"].str.lower().str.strip()
+    artist_name = artist_name.lower().strip()
+
+    df_artist = df[df["artist_clean"] == artist_name].copy()
 
     if df_artist.empty:
         return None
 
-    # Convert to numeric (handling 'true'/'false' strings or booleans)
-    df_artist["is_explicit"] = df_artist["explicit"].astype(str).str.lower().map({"true": 1, "false": 0})
+    df_artist["explicit_num"] = df_artist["explicit"].astype(str).str.lower().map({"true": 1, "false": 0})
 
-    explicit_count = int(df_artist["is_explicit"].sum())
-    total_count = len(df_artist)
-    clean_count = total_count - explicit_count
-    ratio = explicit_count / total_count if total_count > 0 else 0
-
-    return {
-        "explicit_count": explicit_count,
-        "clean_count": clean_count,
-        "total": total_count,
-        "ratio": ratio
-    }
+    return df_artist["explicit_num"].mean()
 
 
 def get_top_tracks_for_artist(selected_artist_name, db_path):
     connection = sqlite3.connect(db_path)
 
-    # 1. Fetch popularity data
-    query_pop = "SELECT id, track_popularity, explicit FROM tracks_data"
+    # 1. Fetch popularity data from tracks_data
+    query_pop = "SELECT id, track_popularity FROM tracks_data"
     df_pop = pd.read_sql(query_pop, connection)
 
     # 2. Fetch track info and audio features from albums_data & features_data
@@ -481,40 +473,10 @@ def load_collaboration_data(db_path):
     df_collab = pd.read_sql("""
         SELECT track_id, artist_0, artist_1
         FROM albums_data
-=======
-    connection = sqlite3.connect(db_path)
-
-    df = pd.read_sql(f"""
-        SELECT 
-            features_data.{feature} AS feature_value,
-            artist_data.genre_1,
-            artist_data.genre_2,
-            artist_data.genre_3,
-            artist_data.genre_4
-        FROM features_data
-        JOIN albums_data ON features_data.id = albums_data.track_id
-        JOIN artist_data ON albums_data.artist_id = artist_data.id
-        WHERE features_data.{feature} IS NOT NULL
-    """, connection)
-
-    connection.close()
-    return df
-
-
-@st.cache_data
-def get_artist_explicit_ratio(artist_name, db_path):
-    connection = sqlite3.connect(db_path)
-
-    df = pd.read_sql("""
-        SELECT t.explicit, a.artist_0
-        FROM tracks_data t
-        JOIN albums_data a ON t.id = a.track_id
->>>>>>> part5-graphs-tytti
     """, connection)
 
     connection.close()
 
-<<<<<<< HEAD
     df = pd.merge(df_collab, df_tracks, left_on="track_id", right_on="id", how="inner")
 
     # collaboration logic (reuse your own function)
@@ -522,70 +484,6 @@ def get_artist_explicit_ratio(artist_name, db_path):
         return str(row["artist_1"]).strip().lower() not in ["", "none"]
 
     df["is_collab"] = df.apply(is_collaboration, axis=1)
-=======
-    df["artist_clean"] = df["artist_0"].str.lower().str.strip()
-    artist_name = artist_name.lower().strip()
-
-    df_artist = df[df["artist_clean"] == artist_name].copy()
-
-    if df_artist.empty:
-        return None
-
-    df_artist["explicit_num"] = df_artist["explicit"].astype(str).str.lower().map({"true": 1, "false": 0})
-
-    return df_artist["explicit_num"].mean()
-
-
-def get_top_tracks_for_artist(selected_artist_name, db_path):
-    connection = sqlite3.connect(db_path)
-
-    # 1. Fetch popularity data
-    query_pop = "SELECT id, track_popularity FROM tracks_data"
-    df_pop = pd.read_sql(query_pop, connection)
-
-    # 2. Fetch track info and audio features from albums_data & features_data
-    # We add duration and features to perform the "Outlier/Invalid" check
-    query_details = """
-        SELECT 
-            albums_data.track_id, 
-            albums_data.track_name, 
-            albums_data.artist_0, 
-            albums_data.duration_ms,
-            features_data.danceability,
-            features_data.energy,
-            features_data.valence
-        FROM albums_data
-        JOIN features_data ON albums_data.track_id = features_data.id
-    """
-    df_details = pd.read_sql(query_details, connection)
-    connection.close()
-
-    # 3. Merge dataframes
-    df_merged = pd.merge(df_details, df_pop, left_on='track_id', right_on='id', how='inner')
-
-    # --- WRANGLING STEP: Outliers and Invalid Records ---
-
-    # Remove missing IDs and non-positive durations
-    df_merged = df_merged.dropna(subset=["track_id"])
-    df_merged = df_merged[df_merged["duration_ms"] > 0]
-
-    df_merged = df_merged.sort_values(by='track_popularity', ascending=False)
-    df_merged = df_merged.drop_duplicates(subset=["track_name"], keep='first')
-
-    # Ensure audio features are in the valid range [0, 1]
-    features = ["danceability", "energy", "valence"]
-    for col in features:
-        df_merged = df_merged[(df_merged[col] >= 0) & (df_merged[col] <= 1)]
-
-    # Remove duplicate tracks to ensure the Top 5 are unique
-    df_merged = df_merged.drop_duplicates(subset=["track_id"])
-
-    # --- FILTERING FOR ARTIST ---
-
-    df_merged['artist_0_clean'] = df_merged['artist_0'].str.lower().str.strip()
-    target_name = selected_artist_name.lower().strip()
-    artist_tracks = df_merged[df_merged['artist_0_clean'] == target_name].copy()
->>>>>>> part5-graphs-tytti
 
     return df
 
@@ -1217,114 +1115,27 @@ def feature_genre_analysis_page():
             with col_right:
                 # Feature distribution
                 st.subheader("Feature Distribution")
-
-                fig_scatter = feature_count_scatter(
-                df_features,
-                 selected_feature,
-                selected_percent
-            )
-
-                st.plotly_chart(fig_scatter, use_container_width=True)
-               
-
-            #Genres hig hand low on specific feature
-            st.markdown("---")
-            st.subheader(f"Genres low and high in {selected_feature}")
-
-            df_genre_feat = load_genre_feature_data(db_path, selected_feature)
-            if not df_genre_feat.empty:
-                df_genre_feat = df_genre_feat.dropna(subset=["feature_value"])
-
-                # Create quantiles
-                labels_full = ["very low", "low", "medium", "high", "very high"]
-                df_genre_feat["level"] = pd.cut(
-                    df_genre_feat["feature_value"],
-                    bins=[0, 0.2, 0.4, 0.6, 0.8, 1.0],
-                    labels=labels_full,
-                    include_lowest=True
+                fig_dist = go.Figure()
+                fig_dist.add_trace(go.Histogram(
+                    x=df_features[selected_feature],
+                    nbinsx=50,
+                    name="All tracks"
+                ))
+                fig_dist.add_trace(go.Histogram(
+                    x=top_tracks[selected_feature],
+                    nbinsx=30,
+                    name=f"Top {selected_percent}%"
+                ))
+                fig_dist.update_layout(
+                    title=f"Distribution of {selected_feature.capitalize()}",
+                    xaxis_title=selected_feature.capitalize(),
+                    yaxis_title="Count",
+                    barmode='overlay'
                 )
-<<<<<<< HEAD
-=======
                 st.plotly_chart(fig_dist, use_container_width=True)
+        else:
+            st.warning(f"No data found for feature: {selected_feature}")
 
-            #Genres hig hand low on specific feature
-            st.markdown("---")
-            st.subheader(f"Genres low and high in {selected_feature}")
-
-            df_genre_feat = load_genre_feature_data(db_path, selected_feature)
-            if not df_genre_feat.empty:
-                df_genre_feat = df_genre_feat.dropna(subset=["feature_value"])
-
-                # Create quantiles
-                labels_full = ["very low", "low", "medium", "high", "very high"]
-                df_genre_feat["level"] = pd.cut(
-                    df_genre_feat["feature_value"],
-                    bins=[0, 0.2, 0.4, 0.6, 0.8, 1.0],
-                    labels=labels_full,
-                    include_lowest=True
-                )
->>>>>>> part5-graphs-tytti
-                n_bins = df_genre_feat["level"].nunique()
-                df_genre_feat["level"] = pd.cut(
-                    df_genre_feat["feature_value"],
-                    bins=[0, 0.2, 0.4, 0.6, 0.8, 1.0],
-                    labels=labels_full,
-                    include_lowest=True
-                )
-
-                def count_genres(df_subset):
-                    genres = []
-                    for col in ["genre_1", "genre_2", "genre_3", "genre_4"]:
-                        cleaned = (
-                            df_subset[col]
-                            .dropna()
-                            .astype(str)
-                            .str.strip()
-                        )
-                        # REMOVE bad values
-                        cleaned = cleaned[
-                            (cleaned != "") &
-                            (cleaned.str.lower() != "nan") &
-                            (cleaned.str.lower() != "none")
-                        ]
-                        genres.extend(cleaned)
-                    return pd.Series(genres).value_counts().head(10)
-
-                low_counts = count_genres(df_genre_feat[df_genre_feat["level"] == "very low"])
-                high_counts = count_genres(df_genre_feat[df_genre_feat["level"] == "very high"])
-                col1, col2 = st.columns(2)
-                with col1:
-                    fig_low = px.bar(
-                        x=low_counts.values,
-                        y=low_counts.index,
-                        orientation='h',
-                        title=f"Very low {selected_feature}"
-                    )
-                    fig_low.update_layout(
-                        yaxis=dict(categoryorder='total ascending'),
-                        showlegend=False,
-                        margin=dict(l=0, r=0, t=40, b=0)
-                    )
-                    st.plotly_chart(fig_low, use_container_width=True)
-                with col2:
-                    fig_high = px.bar(
-                        x=high_counts.values,
-                        y=high_counts.index,
-                        orientation='h',
-                        title=f"Very high {selected_feature}"
-                    )
-                    fig_high.update_layout(
-                        yaxis=dict(categoryorder='total ascending'),
-                        showlegend=False,
-                        margin=dict(l=0, r=0, t=40, b=0)
-                    )
-                    st.plotly_chart(fig_high, use_container_width=True)
-            else:
-                st.warning(f"No data found for feature: {selected_feature}")
-<<<<<<< HEAD
-
-=======
->>>>>>> part5-graphs-tytti
 
 def artist_search_page():
     """Artist Search page content"""
@@ -1342,37 +1153,9 @@ def artist_search_page():
         artist_info = df_cleaned[df_cleaned['name'] == selected_artist].iloc[0]
         st.title(f"{artist_info['name']}")
 
-<<<<<<< HEAD
-        # 1. Get the CLEANED tracks first (this uses all your filters: duration, features, etc.)
-        # Note: We need to make sure this function also returns the 'explicit' column now!
-        df_top_tracks = get_top_tracks_for_artist(selected_artist, db_path)
-=======
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3 = st.columns(3)
         col1.metric("Popularity", f"{artist_info['artist_popularity']}")
         col2.metric("Followers", f"{artist_info['followers']}")
-        #Explicit ratio as column 4
-        explicit_ratio = get_artist_explicit_ratio(selected_artist, db_path)
-        if explicit_ratio is not None:
-            col4.metric("Explicit %", f"{explicit_ratio*100:.1f}%")
-        else:
-            col4.metric("Explicit %", "N/A")
->>>>>>> part5-graphs-tytti
-
-        # 2. Calculate explicit stats ONLY from these cleaned tracks
-        if not df_top_tracks.empty:
-            # Ensure 'explicit' column exists in your merged dataframe
-            # (You may need to add 't.explicit' to the SQL query in get_top_tracks_for_artist)
-            df_top_tracks["is_explicit"] = df_top_tracks["explicit"].astype(str).str.lower().map(
-                {"true": 1, "false": 0})
-
-            explicit_count = int(df_top_tracks["is_explicit"].sum())
-            total_count = len(df_top_tracks)
-            clean_count = total_count - explicit_count
-
-        # --- Metrics Row ---
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Popularity", f"{artist_info['artist_popularity']}")
-        col2.metric("Followers", f"{int(artist_info['followers']):,}")
 
         # --- Genre Display Logic ---
         genre_data = artist_info['artist_genres']
@@ -1539,95 +1322,6 @@ def trends_over_time_page():
         st.plotly_chart(fig, use_container_width=True)
 
 
-# ============================================================================
-# SPOTIFY THEME STYLING
-# ============================================================================
-
-SPOTIFY_GREEN = "#1DB954"
-DARK_BG = "#000000"
-CARD_BG = "#121212"
-TEXT_COLOR = "#FFFFFF"
-
-# Set full app background to black
-st.markdown(
-    """
-    <style>
-    /* --- MAIN APP BACKGROUND --- */
-    .stApp {
-        background-color: #121212;
-        color: #FFFFFF;
-    }
-
-    /* --- REMOVE WHITE TOP BAR --- */
-    header {
-        background-color: #121212 !important;
-    }
-
-    /* --- MAIN CONTENT AREA --- */
-    .main {
-        background-color: #121212;
-    }
-
-    /* --- MAIN CONTAINER --- */
-    .block-container {
-        background-color: #121212;
-        padding: 2rem;
-    }
-
-    /* --- SIDEBAR --- */
-    section[data-testid="stSidebar"] {
-        background-color: #0e0e0e;
-        border-right: 2px solid #1DB954;
-    }
-
-    /* --- REMOVE ANY REMAINING WHITE --- */
-    div[data-testid="stAppViewContainer"] {
-        background-color: #121212;
-    }
-
-    /* --- TEXT --- */
-    h1, h2, h3, h4, h5, h6 {
-        color: #FFFFFF;
-    }
-
-    p, span, div {
-        color: #FFFFFF;
-    }
-
-    /* --- BUTTON STYLE --- */
-div.stButton > button {
-    background-color: #FFFFFF;
-    color: #000000 !important;   /* 👈 force black text */
-    border-radius: 10px;
-    border: none;
-    padding: 0.6em 1em;
-    transition: all 0.2s ease-in-out;
-}
-
-/* --- BUTTON TEXT (fix inner span) --- */
-div.stButton > button * {
-    color: #000000 !important;   /* 👈 ensures text inside is black */
-}
-
-/* --- BUTTON HOVER --- */
-div.stButton > button:hover {
-    background-color: #1DB954;
-    color: #000000 !important;
-}
-
-/* --- BUTTON HOVER TEXT --- */
-div.stButton > button:hover * {
-    color: #FFFFFF !important;
-}
-
-/* --- BUTTON CLICK --- */
-div.stButton > button:active {
-    transform: scale(0.98);
-}
-    </style>
-    """,
-    unsafe_allow_html=True
-)
 # ============================================================================
 # MAIN APP - Page routing
 # ============================================================================
