@@ -854,70 +854,7 @@ def home_page():
             st.plotly_chart(fig_collab, use_container_width=True)
 
 
-    #Pots 6&7: Explicit and Collaborations
-    st.markdown("---")
-    st.subheader("Explicitness and Collaborations")
-
-    col1, col2 = st.columns(2)
-
-    #Explicit content analysis
-    with col1:
-        df_explicit = load_explicit_data(db_path)
-
-        if not df_explicit.empty:
-            explicit_mean = df_explicit[df_explicit["explicit_num"] == 1]["track_popularity"].mean()
-            non_explicit_mean = df_explicit[df_explicit["explicit_num"] == 0]["track_popularity"].mean()
-
-            m1, m2 = st.columns(2)
-            with m1:
-                st.metric("Explicit Avg", f"{explicit_mean:.2f}")
-            with m2:
-                st.metric("Non-Explicit Avg", f"{non_explicit_mean:.2f}")
-
-            fig_explicit = go.Figure()
-            fig_explicit.add_trace(go.Bar(
-                x=["Non-Explicit", "Explicit"],
-                y=[non_explicit_mean, explicit_mean],
-                marker_color=["#4C72B0", "#E64A19"]
-            ))
-
-            fig_explicit.update_layout(
-                title="Explicit vs Popularity",
-                yaxis_title="Popularity"
-            )
-
-            st.plotly_chart(fig_explicit, use_container_width=True)
-
-    #Collaboration analysis
-    with col2:
-        df_collab = load_collaboration_data(db_path)
-
-        if not df_collab.empty:
-            mean_values = df_collab.groupby("is_collab")["track_popularity"].mean()
-
-            solo = mean_values.get(False, 0)
-            collab = mean_values.get(True, 0)
-
-            m1, m2 = st.columns(2)
-            with m1:
-                st.metric("Solo Avg", f"{solo:.2f}")
-            with m2:
-                st.metric("Collab Avg", f"{collab:.2f}")
-
-            fig_collab = go.Figure()
-            fig_collab.add_trace(go.Bar(
-                x=["Solo", "Collaboration"],
-                y=[solo, collab],
-                marker_color=["#4C72B0", "#E64A19"]
-            ))
-
-            fig_collab.update_layout(
-                title="Collaboration vs Popularity",
-                yaxis_title="Popularity"
-            )
-
-            st.plotly_chart(fig_collab, use_container_width=True)
-
+    
 def feature_genre_analysis_page():
     """Feature & Genre Analysis page content"""
     st.title("Feature & Genre Analysis")
