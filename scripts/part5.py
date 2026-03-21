@@ -1090,6 +1090,8 @@ def feature_genre_analysis_page():
             else:
                 st.warning(f"No data found for feature: {selected_feature}")
 
+=======
+>>>>>>> part5-graphs-tytti
 
 def artist_search_page():
     """Artist Search page content"""
@@ -1107,6 +1109,7 @@ def artist_search_page():
         artist_info = df_cleaned[df_cleaned['name'] == selected_artist].iloc[0]
         st.title(f"{artist_info['name']}")
 
+<<<<<<< HEAD
         # 1. Get the CLEANED tracks first (this uses all your filters: duration, features, etc.)
         # Note: We need to make sure this function also returns the 'explicit' column now!
         df_top_tracks = get_top_tracks_for_artist(selected_artist, db_path)
