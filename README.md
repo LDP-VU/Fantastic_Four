@@ -14,7 +14,8 @@ This project analyses a dataset provided by **Spotify (2023)** containing inform
 ├── README.md
 └── .gitignore
 ```
-- **scripts/** contains Python scripts used for analysis and visualization  
+- **scripts/** contains Python scripts used for analysis and visualization
+- **.gitignore/** removes excludes unnecessary files like temporary files, logs, or sensitive information.  
   
 ## Data Source
 Data from the SQLite database file "spotify_database.db" is used and analysed. 
