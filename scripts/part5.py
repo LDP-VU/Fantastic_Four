@@ -402,25 +402,34 @@ def home_page():
     st.markdown("### Genres")
     left, right = st.columns(2)
     with left:     
-        fig4, ax4 = plt.subplots(figsize=(6,5))
-        top_genres = all_genres.value_counts().head(10)
-        ax4.barh(top_genres.index, top_genres.values, color="#2E86C1")
-        ax4.set_title("Top 10 Genres", fontweight="bold")
-        ax4.set_xlabel("Number of Artists")
-        ax4.invert_yaxis() 
-        ax4.grid(axis="x", linestyle="--", alpha=0.4)
-        fig4.tight_layout()
-        st.pyplot(fig4, use_container_width=True)
+        top_genres = all_genres.value_counts().head(10).reset_index()
+        top_genres.columns = ["genre", "count"]
+        fig4 = px.bar(
+            top_genres,
+            x="count",
+            y="genre",
+            orientation="h",
+            title="Top 10 Genres",
+            labels={
+            "count": "Number of Artists",
+            "genre": "Genre"
+        }
+        )
+        fig4.update_layout(yaxis=dict(autorange="reversed"))
+        st.plotly_chart(fig4, use_container_width=True)
+
 
     # Plot 5: Artist popularity vs number of genres associated with artist    
     with right: 
         df["genre_count"] = df[["genre_1", "genre_2", "genre_3", "genre_4"]].notna().sum(axis=1)
         fig5, ax5 = plt.subplots(figsize=(7,5.9))
-        df.boxplot(column="artist_popularity", by="genre_count", ax=ax5,
-            boxprops=dict(linewidth=2, color="#2E86C1"),
-            whiskerprops=dict(linewidth=2, color="#2E86C1"),
-            capprops=dict(linewidth=2, color="#2E86C1"),
-            medianprops=dict(linewidth=2, color="#2E86C1"))
+        fig5 = px.box(
+            df,
+            x="genre_count",
+            y="artist_popularity",
+            title="Artist Popularity vs Number of Genres"
+        )
+        st.plotly_chart(fig5, use_container_width=True)
         ax5.set_title("Artist Popularity vs Number of Genres Associated", fontweight="bold", fontsize=14)
         ax5.set_xlabel("Number of Genres Associated with Artist", fontsize=12)
         ax5.set_ylabel("Artist Popularity", fontsize=12)
