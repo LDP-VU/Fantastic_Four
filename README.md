@@ -14,7 +14,6 @@ This project analyses a dataset provided by **Spotify (2023)** containing inform
 ├── README.md
 └── .gitignore
 ```
-- **plots/** stores generated visualizations
 - **scripts/** contains Python scripts used for analysis and visualization  
   
 ## Data Source
