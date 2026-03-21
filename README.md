@@ -3,20 +3,19 @@ This project analyses a dataset provided by **Spotify (2023)** containing inform
 
 ## Repository Structure
 ```
-.
-├── plots/                  
-├── scripts/                
+.                  
+├── scripts/
+│   ├── dashboard.py        
 │   ├── part1.py
 │   ├── part3.py
-│   ├── part4.py
-│   └── part5.py
+│   └── part4.py    
 ├── artist_data.csv         
 ├── spotify_database.db    
 ├── README.md
 └── .gitignore
 ```
-- **plots/** stores generated visualizations
-- **scripts/** contains Python scripts used for analysis and visualization  
+- **scripts/** contains Python scripts used for analysis and visualization
+- **.gitignore** excludes unnecessary files like temporary files, logs, or sensitive information.  
   
 ## Data Source
 Data from the SQLite database file "spotify_database.db" is used and analysed. 
