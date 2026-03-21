@@ -365,6 +365,7 @@ def load_explicit_data(db_path):
 
 @st.cache_data
 def load_genre_feature_data(db_path, feature):
+<<<<<<< HEAD
     connection = sqlite3.connect(db_path)
 
     df = pd.read_sql(f"""
@@ -480,6 +481,136 @@ def load_collaboration_data(db_path):
     df_collab = pd.read_sql("""
         SELECT track_id, artist_0, artist_1
         FROM albums_data
+=======
+    connection = sqlite3.connect(db_path)
+
+    df = pd.read_sql(f"""
+        SELECT 
+            features_data.{feature} AS feature_value,
+            artist_data.genre_1,
+            artist_data.genre_2,
+            artist_data.genre_3,
+            artist_data.genre_4
+        FROM features_data
+        JOIN albums_data ON features_data.id = albums_data.track_id
+        JOIN artist_data ON albums_data.artist_id = artist_data.id
+        WHERE features_data.{feature} IS NOT NULL
+    """, connection)
+
+    connection.close()
+    return df
+
+
+@st.cache_data
+def get_artist_explicit_ratio(artist_name, db_path):
+    connection = sqlite3.connect(db_path)
+
+    df = pd.read_sql("""
+        SELECT t.explicit, a.artist_0
+        FROM tracks_data t
+        JOIN albums_data a ON t.id = a.track_id
+>>>>>>> part5-graphs-tytti
+    """, connection)
+
+    connection.close()
+
+<<<<<<< HEAD
+    df = pd.merge(df_collab, df_tracks, left_on="track_id", right_on="id", how="inner")
+
+    # collaboration logic (reuse your own function)
+    def is_collaboration(row):
+        return str(row["artist_1"]).strip().lower() not in ["", "none"]
+
+    df["is_collab"] = df.apply(is_collaboration, axis=1)
+=======
+    df["artist_clean"] = df["artist_0"].str.lower().str.strip()
+    artist_name = artist_name.lower().strip()
+
+    df_artist = df[df["artist_clean"] == artist_name].copy()
+
+    if df_artist.empty:
+        return None
+
+    df_artist["explicit_num"] = df_artist["explicit"].astype(str).str.lower().map({"true": 1, "false": 0})
+
+    return df_artist["explicit_num"].mean()
+
+
+def get_top_tracks_for_artist(selected_artist_name, db_path):
+    connection = sqlite3.connect(db_path)
+
+    # 1. Fetch popularity data
+    query_pop = "SELECT id, track_popularity FROM tracks_data"
+    df_pop = pd.read_sql(query_pop, connection)
+
+    # 2. Fetch track info and audio features from albums_data & features_data
+    # We add duration and features to perform the "Outlier/Invalid" check
+    query_details = """
+        SELECT 
+            albums_data.track_id, 
+            albums_data.track_name, 
+            albums_data.artist_0, 
+            albums_data.duration_ms,
+            features_data.danceability,
+            features_data.energy,
+            features_data.valence
+        FROM albums_data
+        JOIN features_data ON albums_data.track_id = features_data.id
+    """
+    df_details = pd.read_sql(query_details, connection)
+    connection.close()
+
+    # 3. Merge dataframes
+    df_merged = pd.merge(df_details, df_pop, left_on='track_id', right_on='id', how='inner')
+
+    # --- WRANGLING STEP: Outliers and Invalid Records ---
+
+    # Remove missing IDs and non-positive durations
+    df_merged = df_merged.dropna(subset=["track_id"])
+    df_merged = df_merged[df_merged["duration_ms"] > 0]
+
+    df_merged = df_merged.sort_values(by='track_popularity', ascending=False)
+    df_merged = df_merged.drop_duplicates(subset=["track_name"], keep='first')
+
+    # Ensure audio features are in the valid range [0, 1]
+    features = ["danceability", "energy", "valence"]
+    for col in features:
+        df_merged = df_merged[(df_merged[col] >= 0) & (df_merged[col] <= 1)]
+
+    # Remove duplicate tracks to ensure the Top 5 are unique
+    df_merged = df_merged.drop_duplicates(subset=["track_id"])
+
+    # --- FILTERING FOR ARTIST ---
+
+    df_merged['artist_0_clean'] = df_merged['artist_0'].str.lower().str.strip()
+    target_name = selected_artist_name.lower().strip()
+    artist_tracks = df_merged[df_merged['artist_0_clean'] == target_name].copy()
+>>>>>>> part5-graphs-tytti
+
+    return df
+
+# number of songs
+@st.cache_data
+def get_total_tracks(db_path):
+    connection = sqlite3.connect(db_path)
+    query = "SELECT COUNT(DISTINCT id) AS total_tracks FROM tracks_data"
+    result = pd.read_sql(query, connection)
+    connection.close()
+    return int(result.loc[0, "total_tracks"])
+
+
+def load_collaboration_data(db_path):
+    connection = sqlite3.connect(db_path)
+
+    df_tracks = pd.read_sql("""
+        SELECT id, track_popularity
+        FROM tracks_data
+        WHERE track_popularity IS NOT NULL
+    """, connection)
+
+    df_collab = pd.read_sql("""
+        SELECT track_id, artist_0, artist_1
+        FROM albums_data
     """, connection)
 
     connection.close()
@@ -494,14 +625,6 @@ def load_collaboration_data(db_path):
 
     return df
 
-# number of songs
-@st.cache_data
-def get_total_tracks(db_path):
-    connection = sqlite3.connect(db_path)
-    query = "SELECT COUNT(DISTINCT id) AS total_tracks FROM tracks_data"
-    result = pd.read_sql(query, connection)
-    connection.close()
-    return int(result.loc[0, "total_tracks"])
 
 
 # ============================================================================
@@ -617,30 +740,41 @@ def home_page():
 
     # Plot 1: Histogram of popularity
     with left:
-        fig1, ax1 = plt.subplots(figsize=(6,5))
-        ax1.hist(
-            df["artist_popularity"],
-            bins=20,
-            color="#2E86C1",
-            alpha=0.5,
-            edgecolor="black")
-        ax1.set_title("Distribution of Artist Popularity", fontweight="bold")
-        ax1.set_xlabel("Artist popularity")
-        ax1.set_ylabel("Count of artists")
-        ax1.grid(axis="y", linestyle="--", alpha=0.4)
-        st.pyplot(fig1, use_container_width=True)
+        fig1 = px.histogram(
+            df,
+            x="artist_popularity",
+            nbins=20,
+            title="Distribution of Artist Popularity",
+            labels={
+                    "artist_popularity": "Artist Popularity",
+                    "count": "Number of Artists"
+                }
+        )
+
+        fig1.update_layout(
+            bargap=0.05,
+            xaxis_title="Artist Popularity Score",
+            yaxis_title="Number of Artists"
+        )
+        st.plotly_chart(fig1, use_container_width=True)
 
     # Plot 2: Top 10 artists by followers
     with right:
         top10 = df.sort_values(by="followers", ascending=False).head(10)
-        fig2, ax2 = plt.subplots(figsize=(6, 5.7))
-        ax2.barh(top10["name"], top10["followers"], color="#2E86C1")
-        ax2.set_title("Top 10 Artists by Followers", fontweight="bold")
-        ax2.set_xlabel("Followers", fontsize=12)
-        ax2.set_ylabel("Artist", fontsize=12)
-        ax2.invert_yaxis()
-        ax2.grid(axis="x", linestyle="--", alpha=0.4)
-        st.pyplot(fig2, use_container_width=True)
+        fig2 = px.bar(
+                top10,
+                x="followers",
+                y="name",
+                orientation="h",
+                title="Top 10 Artists by Followers",
+                labels={
+                    "followers": "Number of Followers",
+                    "name": "Artist"
+                }
+            )
+
+        fig2.update_layout(yaxis=dict(autorange="reversed"))
+        st.plotly_chart(fig2, use_container_width=True)
 
     # Plot 3: Followers vs Popularity scatter plot
     fig = px.scatter(
@@ -717,32 +851,109 @@ def home_page():
     st.markdown("### Genres")
     left, right = st.columns(2)
     with left:     
-        fig4, ax4 = plt.subplots(figsize=(6,5))
-        top_genres = all_genres.value_counts().head(10)
-        ax4.barh(top_genres.index, top_genres.values, color="#2E86C1")
-        ax4.set_title("Top 10 Genres", fontweight="bold")
-        ax4.set_xlabel("Number of Artists")
-        ax4.invert_yaxis() 
-        ax4.grid(axis="x", linestyle="--", alpha=0.4)
-        fig4.tight_layout()
-        st.pyplot(fig4, use_container_width=True)
+        top_genres = all_genres.value_counts().head(10).reset_index()
+        top_genres.columns = ["genre", "count"]
+        fig4 = px.bar(
+            top_genres,
+            x="count",
+            y="genre",
+            orientation="h",
+            title="Top 10 Genres",
+            labels={
+            "count": "Number of Artists",
+            "genre": "Genre"
+        }
+        )
+        fig4.update_layout(yaxis=dict(autorange="reversed"))
+        st.plotly_chart(fig4, use_container_width=True)
+
 
     # Plot 5: Artist popularity vs number of genres associated with artist    
     with right: 
         df["genre_count"] = df[["genre_1", "genre_2", "genre_3", "genre_4"]].notna().sum(axis=1)
         fig5, ax5 = plt.subplots(figsize=(7,5.9))
-        df.boxplot(column="artist_popularity", by="genre_count", ax=ax5,
-            boxprops=dict(linewidth=2, color="#2E86C1"),
-            whiskerprops=dict(linewidth=2, color="#2E86C1"),
-            capprops=dict(linewidth=2, color="#2E86C1"),
-            medianprops=dict(linewidth=2, color="#2E86C1"))
+        fig5 = px.box(
+            df,
+            x="genre_count",
+            y="artist_popularity",
+            title="Artist Popularity vs Number of Genres",
+            labels={
+                    "artist_popularity": "Artist Popularity",
+                    "genre_count": "Number of Genres"
+                }
+        )
+        st.plotly_chart(fig5, use_container_width=True)
         ax5.set_title("Artist Popularity vs Number of Genres Associated", fontweight="bold", fontsize=14)
         ax5.set_xlabel("Number of Genres Associated with Artist", fontsize=12)
         ax5.set_ylabel("Artist Popularity", fontsize=12)
         ax5.grid(False)
-        plt.suptitle("")
-        fig5.tight_layout()
-        st.pyplot(fig5, use_container_width=True)
+
+
+    #Pots 6&7: Explicit and Collaborations
+    st.markdown("---")
+    st.subheader("Explicitness and Collaborations")
+
+    col1, col2 = st.columns(2)
+
+    #Explicit content analysis
+    with col1:
+        df_explicit = load_explicit_data(db_path)
+
+        if not df_explicit.empty:
+            explicit_mean = df_explicit[df_explicit["explicit_num"] == 1]["track_popularity"].mean()
+            non_explicit_mean = df_explicit[df_explicit["explicit_num"] == 0]["track_popularity"].mean()
+
+            m1, m2 = st.columns(2)
+            with m1:
+                st.metric("Explicit Avg", f"{explicit_mean:.2f}")
+            with m2:
+                st.metric("Non-Explicit Avg", f"{non_explicit_mean:.2f}")
+
+            fig_explicit = go.Figure()
+            fig_explicit.add_trace(go.Bar(
+                x=["Non-Explicit", "Explicit"],
+                y=[non_explicit_mean, explicit_mean],
+                marker_color=["#4C72B0", "#E64A19"]
+            ))
+
+            fig_explicit.update_layout(
+                title="Explicit vs Popularity",
+                yaxis_title="Popularity",
+                xaxis_title="Explicitness"
+            )
+
+            st.plotly_chart(fig_explicit, use_container_width=True)
+
+    #Collaboration analysis
+    with col2:
+        df_collab = load_collaboration_data(db_path)
+
+        if not df_collab.empty:
+            mean_values = df_collab.groupby("is_collab")["track_popularity"].mean()
+
+            solo = mean_values.get(False, 0)
+            collab = mean_values.get(True, 0)
+
+            m1, m2 = st.columns(2)
+            with m1:
+                st.metric("Solo Avg", f"{solo:.2f}")
+            with m2:
+                st.metric("Collab Avg", f"{collab:.2f}")
+
+            fig_collab = go.Figure()
+            fig_collab.add_trace(go.Bar(
+                x=["Solo", "Collaboration"],
+                y=[solo, collab],
+                marker_color=["#4C72B0", "#E64A19"]
+            ))
+
+            fig_collab.update_layout(
+                title="Collaboration vs Popularity",
+                yaxis_title="Popularity",
+                xaxis_title="Track type"
+            )
+
+            st.plotly_chart(fig_collab, use_container_width=True)
 
 
     #Pots 6&7: Explicit and Collaborations
@@ -1032,6 +1243,27 @@ def feature_genre_analysis_page():
                     labels=labels_full,
                     include_lowest=True
                 )
+<<<<<<< HEAD
+=======
+                st.plotly_chart(fig_dist, use_container_width=True)
+
+            #Genres hig hand low on specific feature
+            st.markdown("---")
+            st.subheader(f"Genres low and high in {selected_feature}")
+
+            df_genre_feat = load_genre_feature_data(db_path, selected_feature)
+            if not df_genre_feat.empty:
+                df_genre_feat = df_genre_feat.dropna(subset=["feature_value"])
+
+                # Create quantiles
+                labels_full = ["very low", "low", "medium", "high", "very high"]
+                df_genre_feat["level"] = pd.cut(
+                    df_genre_feat["feature_value"],
+                    bins=[0, 0.2, 0.4, 0.6, 0.8, 1.0],
+                    labels=labels_full,
+                    include_lowest=True
+                )
+>>>>>>> part5-graphs-tytti
                 n_bins = df_genre_feat["level"].nunique()
                 df_genre_feat["level"] = pd.cut(
                     df_genre_feat["feature_value"],
@@ -1089,6 +1321,7 @@ def feature_genre_analysis_page():
                     st.plotly_chart(fig_high, use_container_width=True)
             else:
                 st.warning(f"No data found for feature: {selected_feature}")
+<<<<<<< HEAD
 
 =======
 >>>>>>> part5-graphs-tytti
@@ -1113,6 +1346,17 @@ def artist_search_page():
         # 1. Get the CLEANED tracks first (this uses all your filters: duration, features, etc.)
         # Note: We need to make sure this function also returns the 'explicit' column now!
         df_top_tracks = get_top_tracks_for_artist(selected_artist, db_path)
+=======
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Popularity", f"{artist_info['artist_popularity']}")
+        col2.metric("Followers", f"{artist_info['followers']}")
+        #Explicit ratio as column 4
+        explicit_ratio = get_artist_explicit_ratio(selected_artist, db_path)
+        if explicit_ratio is not None:
+            col4.metric("Explicit %", f"{explicit_ratio*100:.1f}%")
+        else:
+            col4.metric("Explicit %", "N/A")
+>>>>>>> part5-graphs-tytti
 
         # 2. Calculate explicit stats ONLY from these cleaned tracks
         if not df_top_tracks.empty:
@@ -1295,6 +1539,95 @@ def trends_over_time_page():
         st.plotly_chart(fig, use_container_width=True)
 
 
+# ============================================================================
+# SPOTIFY THEME STYLING
+# ============================================================================
+
+SPOTIFY_GREEN = "#1DB954"
+DARK_BG = "#000000"
+CARD_BG = "#121212"
+TEXT_COLOR = "#FFFFFF"
+
+# Set full app background to black
+st.markdown(
+    """
+    <style>
+    /* --- MAIN APP BACKGROUND --- */
+    .stApp {
+        background-color: #121212;
+        color: #FFFFFF;
+    }
+
+    /* --- REMOVE WHITE TOP BAR --- */
+    header {
+        background-color: #121212 !important;
+    }
+
+    /* --- MAIN CONTENT AREA --- */
+    .main {
+        background-color: #121212;
+    }
+
+    /* --- MAIN CONTAINER --- */
+    .block-container {
+        background-color: #121212;
+        padding: 2rem;
+    }
+
+    /* --- SIDEBAR --- */
+    section[data-testid="stSidebar"] {
+        background-color: #0e0e0e;
+        border-right: 2px solid #1DB954;
+    }
+
+    /* --- REMOVE ANY REMAINING WHITE --- */
+    div[data-testid="stAppViewContainer"] {
+        background-color: #121212;
+    }
+
+    /* --- TEXT --- */
+    h1, h2, h3, h4, h5, h6 {
+        color: #FFFFFF;
+    }
+
+    p, span, div {
+        color: #FFFFFF;
+    }
+
+    /* --- BUTTON STYLE --- */
+div.stButton > button {
+    background-color: #FFFFFF;
+    color: #000000 !important;   /* 👈 force black text */
+    border-radius: 10px;
+    border: none;
+    padding: 0.6em 1em;
+    transition: all 0.2s ease-in-out;
+}
+
+/* --- BUTTON TEXT (fix inner span) --- */
+div.stButton > button * {
+    color: #000000 !important;   /* 👈 ensures text inside is black */
+}
+
+/* --- BUTTON HOVER --- */
+div.stButton > button:hover {
+    background-color: #1DB954;
+    color: #000000 !important;
+}
+
+/* --- BUTTON HOVER TEXT --- */
+div.stButton > button:hover * {
+    color: #FFFFFF !important;
+}
+
+/* --- BUTTON CLICK --- */
+div.stButton > button:active {
+    transform: scale(0.98);
+}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 # ============================================================================
 # MAIN APP - Page routing
 # ============================================================================
