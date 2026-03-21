@@ -911,7 +911,7 @@ def feature_genre_analysis_page():
             with col2:
                 st.metric("Avg popularity", round(result['artist_popularity'].mean(), 1))
             with col3:
-                st.metric("Top artist", result.iloc[0]['name'])
+                st.metric("Top artist", result.iloc[9]['name'])
             
             st.markdown("---")
             
