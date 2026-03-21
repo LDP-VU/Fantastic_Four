@@ -343,6 +343,10 @@ def home_page():
             x="artist_popularity",
             nbins=20,
             title="Distribution of Artist Popularity",
+            labels={
+                    "artist_popularity": "Artist Popularity",
+                    "count": "Number of Artists"
+                }
         )
 
         fig1.update_layout(
@@ -360,7 +364,11 @@ def home_page():
                 x="followers",
                 y="name",
                 orientation="h",
-                title="Top 10 Artists by Followers"
+                title="Top 10 Artists by Followers",
+                labels={
+                    "followers": "Number of Followers",
+                    "name": "Artist"
+                }
             )
 
         fig2.update_layout(yaxis=dict(autorange="reversed"))
@@ -427,7 +435,11 @@ def home_page():
             df,
             x="genre_count",
             y="artist_popularity",
-            title="Artist Popularity vs Number of Genres"
+            title="Artist Popularity vs Number of Genres",
+            labels={
+                    "artist_popularity": "Artist Popularity",
+                    "genre_count": "Number of Genres"
+                }
         )
         st.plotly_chart(fig5, use_container_width=True)
         ax5.set_title("Artist Popularity vs Number of Genres Associated", fontweight="bold", fontsize=14)
@@ -465,7 +477,8 @@ def home_page():
 
             fig_explicit.update_layout(
                 title="Explicit vs Popularity",
-                yaxis_title="Popularity"
+                yaxis_title="Popularity",
+                xaxis_title="Explicitness"
             )
 
             st.plotly_chart(fig_explicit, use_container_width=True)
@@ -495,7 +508,8 @@ def home_page():
 
             fig_collab.update_layout(
                 title="Collaboration vs Popularity",
-                yaxis_title="Popularity"
+                yaxis_title="Popularity",
+                xaxis_title="Track type"
             )
 
             st.plotly_chart(fig_collab, use_container_width=True)
