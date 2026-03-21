@@ -380,35 +380,42 @@ def load_genre_feature_data(db_path, feature):
 
 
 @st.cache_data
-def get_artist_explicit_ratio(artist_name, db_path):
+def get_artist_explicit_data(artist_name, db_path):
     connection = sqlite3.connect(db_path)
-
-    df = pd.read_sql("""
-        SELECT t.explicit, a.artist_0
+    # Using SQL JOIN is much faster than loading full tables into memory
+    query = """
+        SELECT t.explicit
         FROM tracks_data t
         JOIN albums_data a ON t.id = a.track_id
-    """, connection)
-
+        WHERE LOWER(TRIM(a.artist_0)) = ?
+    """
+    df_artist = pd.read_sql(query, connection, params=(artist_name.lower().strip(),))
     connection.close()
-
-    df["artist_clean"] = df["artist_0"].str.lower().str.strip()
-    artist_name = artist_name.lower().strip()
-
-    df_artist = df[df["artist_clean"] == artist_name].copy()
 
     if df_artist.empty:
         return None
 
-    df_artist["explicit_num"] = df_artist["explicit"].astype(str).str.lower().map({"true": 1, "false": 0})
+    # Convert to numeric (handling 'true'/'false' strings or booleans)
+    df_artist["is_explicit"] = df_artist["explicit"].astype(str).str.lower().map({"true": 1, "false": 0})
 
-    return df_artist["explicit_num"].mean()
+    explicit_count = int(df_artist["is_explicit"].sum())
+    total_count = len(df_artist)
+    clean_count = total_count - explicit_count
+    ratio = explicit_count / total_count if total_count > 0 else 0
+
+    return {
+        "explicit_count": explicit_count,
+        "clean_count": clean_count,
+        "total": total_count,
+        "ratio": ratio
+    }
 
 
 def get_top_tracks_for_artist(selected_artist_name, db_path):
     connection = sqlite3.connect(db_path)
 
     # 1. Fetch popularity data
-    query_pop = "SELECT id, track_popularity FROM tracks_data"
+    query_pop = "SELECT id, track_popularity, explicit FROM tracks_data"
     df_pop = pd.read_sql(query_pop, connection)
 
     # 2. Fetch track info and audio features from albums_data & features_data
@@ -454,10 +461,7 @@ def get_top_tracks_for_artist(selected_artist_name, db_path):
     target_name = selected_artist_name.lower().strip()
     artist_tracks = df_merged[df_merged['artist_0_clean'] == target_name].copy()
 
-    # Sort by popularity and take the top 5
-    top_5 = artist_tracks.sort_values(by='track_popularity', ascending=False).head(5)
-
-    return top_5[['track_name', 'track_popularity']]
+    return artist_tracks.sort_values(by='track_popularity', ascending=False)[['track_name', 'track_popularity', 'explicit']]
 
 def load_collaboration_data(db_path):
     connection = sqlite3.connect(db_path)
@@ -1015,60 +1019,102 @@ def feature_genre_analysis_page():
             else:
                 st.warning(f"No data found for feature: {selected_feature}")
 
+
 def artist_search_page():
     """Artist Search page content"""
     df_cleaned = get_all_artist(db_path)
 
-    st.header("Artist search")
+    st.header("Artist Search")
     selected_artist = st.selectbox(
         "Type to search for an artist:",
-        options = df_cleaned['name'],
-        index = None,
-        placeholder = "Start typing an artist name"
+        options=df_cleaned['name'],
+        index=None,
+        placeholder="Start typing an artist name"
     )
 
     if selected_artist:
         artist_info = df_cleaned[df_cleaned['name'] == selected_artist].iloc[0]
-
         st.title(f"{artist_info['name']}")
 
+        # 1. Get the CLEANED tracks first (this uses all your filters: duration, features, etc.)
+        # Note: We need to make sure this function also returns the 'explicit' column now!
+        df_top_tracks = get_top_tracks_for_artist(selected_artist, db_path)
+
+        # 2. Calculate explicit stats ONLY from these cleaned tracks
+        if not df_top_tracks.empty:
+            # Ensure 'explicit' column exists in your merged dataframe
+            # (You may need to add 't.explicit' to the SQL query in get_top_tracks_for_artist)
+            df_top_tracks["is_explicit"] = df_top_tracks["explicit"].astype(str).str.lower().map(
+                {"true": 1, "false": 0})
+
+            explicit_count = int(df_top_tracks["is_explicit"].sum())
+            total_count = len(df_top_tracks)
+            clean_count = total_count - explicit_count
+
+        # --- Metrics Row ---
         col1, col2, col3, col4 = st.columns(4)
         col1.metric("Popularity", f"{artist_info['artist_popularity']}")
-        col2.metric("Followers", f"{artist_info['followers']}")
-        #Explicit ratio as column 4
-        explicit_ratio = get_artist_explicit_ratio(selected_artist, db_path)
-        if explicit_ratio is not None:
-            col4.metric("Explicit %", f"{explicit_ratio*100:.1f}%")
-        else:
-            col4.metric("Explicit %", "N/A")
+        col2.metric("Followers", f"{int(artist_info['followers']):,}")
 
+        # --- Genre Display Logic ---
         genre_data = artist_info['artist_genres']
-        if isinstance(genre_data, str):
-            genre_list = ast.literal_eval(genre_data)
+
+        # Robust parsing of the genre string
+        if isinstance(genre_data, str) and genre_data.strip() and genre_data != "[]":
+            try:
+                genre_list = ast.literal_eval(genre_data)
+            except:
+                genre_list = [g.strip() for g in genre_data.split(',')]
         else:
             genre_list = []
 
-        col3.metric("Number of Genres", len(genre_list))
+        # Update the Metric
+        col3.metric("Genres", len(genre_list))
 
+        # The "Missing Genre" Message
         if genre_list:
-            st.write(f"**Genres** {', '.join(genre_list)}")
+            # Capitalize each genre for a cleaner look
+            formatted_genres = ", ".join([g.capitalize() for g in genre_list])
+            st.write(f"**Genres:** {formatted_genres}")
         else:
-            st.write("No genres were listed for this artist.")
-        
-        st.subheader(f"Top 5 Tracks by {selected_artist}")
+            # This is the message you were looking for
+            st.info("No genres were listed for this artist in the database.")
 
-        df_top_tracks = get_top_tracks_for_artist(selected_artist, db_path)
 
-        if not df_top_tracks.empty:
-            # Loop through the top 5 tracks to create the numbered list
-            for i, (index, row) in enumerate(df_top_tracks.iterrows(), start=1):
-                track_name = row['track_name']
-                popularity = row['track_popularity']
+        st.markdown("---")
 
-                # Displaying in the format: 1. Song Name - Popularity: 85
-                st.write(f"{i}. **{track_name}** - Popularity: `{popularity}`")
-        else:
-            st.write("No track data found for this artist.")
+        # --- Display List and Chart side-by-side ---
+        track_col, chart_col = st.columns([1, 1])
+
+        with track_col:
+            st.subheader("Top 5 Tracks")  # Kept the title the same
+            if not df_top_tracks.empty:
+                # Use .head(5) here instead of in the function
+                for i, (index, row) in enumerate(df_top_tracks.head(5).iterrows(), start=1):
+                    st.write(f"{i}. **{row['track_name']}** (Pop: `{row['track_popularity']}`)")
+            else:
+                st.write("No valid tracks found.")
+
+        with chart_col:
+            if not df_top_tracks.empty:
+                st.subheader("Explicit Proportion")
+                fig = go.Figure(data=[go.Pie(
+                    labels=['Explicit', 'Clean'],
+                    values=[explicit_count, clean_count],
+                    hole=0,
+                    marker_colors=['#E74C3C', '#2ECC71'],
+                    textinfo='value+percent',
+                    insidetextfont=dict(size=20, color="white")
+                )])
+
+                fig.update_layout(
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    height=450,
+                    margin=dict(t=0, b=0, l=0, r=0),
+                    legend=dict(font=dict(color="white"), orientation="h", y=-0.1, x=0.5, xanchor="center")
+                )
+                st.plotly_chart(fig, use_container_width=True)
 
 def trends_over_time_page():
     """Trends Over Time page content"""
