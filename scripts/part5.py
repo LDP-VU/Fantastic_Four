@@ -338,30 +338,33 @@ def home_page():
 
     # Plot 1: Histogram of popularity
     with left:
-        fig1, ax1 = plt.subplots(figsize=(6,5))
-        ax1.hist(
-            df["artist_popularity"],
-            bins=20,
-            color="#2E86C1",
-            alpha=0.5,
-            edgecolor="black")
-        ax1.set_title("Distribution of Artist Popularity", fontweight="bold")
-        ax1.set_xlabel("Artist popularity")
-        ax1.set_ylabel("Count of artists")
-        ax1.grid(axis="y", linestyle="--", alpha=0.4)
-        st.pyplot(fig1, use_container_width=True)
+        fig1 = px.histogram(
+            df,
+            x="artist_popularity",
+            nbins=20,
+            title="Distribution of Artist Popularity",
+        )
+
+        fig1.update_layout(
+            bargap=0.05,
+            xaxis_title="Artist Popularity Score",
+            yaxis_title="Number of Artists"
+        )
+        st.plotly_chart(fig1, use_container_width=True)
 
     # Plot 2: Top 10 artists by followers
     with right:
         top10 = df.sort_values(by="followers", ascending=False).head(10)
-        fig2, ax2 = plt.subplots(figsize=(6, 5.7))
-        ax2.barh(top10["name"], top10["followers"], color="#2E86C1")
-        ax2.set_title("Top 10 Artists by Followers", fontweight="bold")
-        ax2.set_xlabel("Followers", fontsize=12)
-        ax2.set_ylabel("Artist", fontsize=12)
-        ax2.invert_yaxis()
-        ax2.grid(axis="x", linestyle="--", alpha=0.4)
-        st.pyplot(fig2, use_container_width=True)
+        fig2 = px.bar(
+                top10,
+                x="followers",
+                y="name",
+                orientation="h",
+                title="Top 10 Artists by Followers"
+            )
+
+        fig2.update_layout(yaxis=dict(autorange="reversed"))
+        st.plotly_chart(fig2, use_container_width=True)
 
     # Plot 3: Followers vs Popularity scatter plot
     fig = px.scatter(
