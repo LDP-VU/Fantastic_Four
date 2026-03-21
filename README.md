@@ -3,13 +3,12 @@ This project analyses a dataset provided by **Spotify (2023)** containing inform
 
 ## Repository Structure
 ```
-.
-├── plots/                  
-├── scripts/                
+.                  
+├── scripts/
+│   ├── dashboard.py        
 │   ├── part1.py
 │   ├── part3.py
-│   ├── part4.py
-│   └── part5.py
+│   └── part4.py    
 ├── artist_data.csv         
 ├── spotify_database.db    
 ├── README.md
