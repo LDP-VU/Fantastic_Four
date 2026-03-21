@@ -434,9 +434,6 @@ def home_page():
         ax5.set_xlabel("Number of Genres Associated with Artist", fontsize=12)
         ax5.set_ylabel("Artist Popularity", fontsize=12)
         ax5.grid(False)
-        plt.suptitle("")
-        fig5.tight_layout()
-        st.pyplot(fig5, use_container_width=True)
 
 
     #Pots 6&7: Explicit and Collaborations
