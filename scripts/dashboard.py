@@ -706,7 +706,7 @@ def home_page():
         y=0.90,
         xref="paper",
         yref="paper",
-        text=f"r = {corr:.3f}<br>R² = {r_squared:.3f}",
+        text=f"r = {corr:.3f}<br>R^2 = {r_squared:.3f}",
         showarrow=False,
         align="right",
         font=dict(size=14, color="black"),
