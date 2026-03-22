@@ -387,7 +387,6 @@ def load_genre_feature_data(db_path, feature):
 @st.cache_data
 def get_artist_explicit_data(artist_name, db_path):
     connection = sqlite3.connect(db_path)
-    # Using SQL JOIN is much faster than loading full tables into memory
     query = """
         SELECT t.explicit
         FROM tracks_data t
@@ -400,7 +399,7 @@ def get_artist_explicit_data(artist_name, db_path):
     if df_artist.empty:
         return None
 
-    # Convert to numeric (handling 'true'/'false' strings or booleans)
+    # Convert to numeric 
     df_artist["is_explicit"] = df_artist["explicit"].astype(str).str.lower().map({"true": 1, "false": 0})
 
     explicit_count = int(df_artist["is_explicit"].sum())
@@ -424,7 +423,6 @@ def get_top_tracks_for_artist(selected_artist_name, db_path):
     df_pop = pd.read_sql(query_pop, connection)
 
     # 2. Fetch track info and audio features from albums_data & features_data
-    # We add duration and features to perform the "Outlier/Invalid" check
     query_details = """
         SELECT 
             albums_data.track_id, 
@@ -443,8 +441,6 @@ def get_top_tracks_for_artist(selected_artist_name, db_path):
     # 3. Merge dataframes
     df_merged = pd.merge(df_details, df_pop, left_on='track_id', right_on='id', how='inner')
 
-    # --- WRANGLING STEP: Outliers and Invalid Records ---
-
     # Remove missing IDs and non-positive durations
     df_merged = df_merged.dropna(subset=["track_id"])
     df_merged = df_merged[df_merged["duration_ms"] > 0]
@@ -459,8 +455,6 @@ def get_top_tracks_for_artist(selected_artist_name, db_path):
 
     # Remove duplicate tracks to ensure the Top 5 are unique
     df_merged = df_merged.drop_duplicates(subset=["track_id"])
-
-    # --- FILTERING FOR ARTIST ---
 
     df_merged['artist_0_clean'] = df_merged['artist_0'].str.lower().str.strip()
     target_name = selected_artist_name.lower().strip()
@@ -486,7 +480,6 @@ def load_collaboration_data(db_path):
 
     df = pd.merge(df_collab, df_tracks, left_on="track_id", right_on="id", how="inner")
 
-    # collaboration logic (reuse your own function)
     def is_collaboration(row):
         return str(row["artist_1"]).strip().lower() not in ["", "none"]
 
@@ -967,7 +960,6 @@ def feature_genre_analysis_page():
             expanded = expanded[expanded["artist"].str.lower() != "nan"]
             artist_counts = expanded.groupby("artist").size().sort_values(ascending=False)
             
-            # Display metrics
             #Define units for the features
             units = {
                 "tempo": "BPM",
@@ -990,7 +982,7 @@ def feature_genre_analysis_page():
             with col2:
                 st.metric(f"Top {selected_percent}% tracks", len(top_tracks))
             with col3:
-                # We add the unit to the value and a descriptive tooltip
+                # adds the unit to the value and a descriptive tooltip
                 st.metric(
                     label="Threshold",
                     value=f"{threshold:.2f} {unit}",
@@ -1131,14 +1123,9 @@ def artist_search_page():
         artist_info = df_cleaned[df_cleaned['name'] == selected_artist].iloc[0]
         st.title(f"{artist_info['name']}")
 
-        # 1. Get the CLEANED tracks first (this uses all your filters: duration, features, etc.)
-        # Note: We need to make sure this function also returns the 'explicit' column now!
         df_top_tracks = get_top_tracks_for_artist(selected_artist, db_path)
 
-        # 2. Calculate explicit stats ONLY from these cleaned tracks
         if not df_top_tracks.empty:
-            # Ensure 'explicit' column exists in your merged dataframe
-            # (You may need to add 't.explicit' to the SQL query in get_top_tracks_for_artist)
             df_top_tracks["is_explicit"] = df_top_tracks["explicit"].astype(str).str.lower().map(
                 {"true": 1, "false": 0})
 
@@ -1154,7 +1141,7 @@ def artist_search_page():
         # --- Genre Display Logic ---
         genre_data = artist_info['artist_genres']
 
-        # Robust parsing of the genre string
+        # Parsing of the genre string
         if isinstance(genre_data, str) and genre_data.strip() and genre_data != "[]":
             try:
                 genre_list = ast.literal_eval(genre_data)
@@ -1168,11 +1155,10 @@ def artist_search_page():
 
         # The "Missing Genre" Message
         if genre_list:
-            # Capitalize each genre for a cleaner look
+            # Capitalizes each genre
             formatted_genres = ", ".join([g.capitalize() for g in genre_list])
             st.write(f"**Genres:** {formatted_genres}")
         else:
-            # This is the message you were looking for
             st.info("No genres were listed for this artist in the database.")
 
 
@@ -1182,9 +1168,8 @@ def artist_search_page():
         track_col, chart_col = st.columns([1, 1])
 
         with track_col:
-            st.subheader("Top 5 Tracks")  # Kept the title the same
+            st.subheader("Top 5 Tracks") 
             if not df_top_tracks.empty:
-                # Use .head(5) here instead of in the function
                 for i, (index, row) in enumerate(df_top_tracks.head(5).iterrows(), start=1):
                     st.write(f"{i}. **{row['track_name']}** (Pop: `{row['track_popularity']}`)")
             else:
