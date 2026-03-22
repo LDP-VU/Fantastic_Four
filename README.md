@@ -8,14 +8,16 @@ This project analyses a dataset provided by **Spotify (2023)** containing inform
 │   ├── dashboard.py        
 │   ├── part1.py
 │   ├── part3.py
-│   └── part4.py    
-├── artist_data.csv         
-├── spotify_database.db    
+│   └── part4.py   
+├── artist_data.csv
 ├── README.md
+├── requirements.txt        
+├── spotify_database.db    
 └── .gitignore
 ```
-- **scripts/** contains Python scripts used for analysis and visualization
-- **.gitignore** excludes unnecessary files like temporary files, logs, or sensitive information.  
+- **scripts/** contains Python scripts used for analysis and visualization.
+- **.gitignore** excludes unnecessary files like temporary files, logs, or sensitive information.
+- **requirements.txt** indicates package dependencies. 
   
 ## Data Source
 Data from the SQLite database file "spotify_database.db" is used and analysed. 
